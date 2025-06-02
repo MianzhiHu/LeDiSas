@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import pingouin as pg
 from scipy import stats
+from plotting_functions import *
 
 # load all model files
 model_path = './LeSaS1/Model/'
@@ -21,9 +22,6 @@ for file in os.listdir(model_path):
         # Get model name from filename
         model_name = file.split('.')[0].replace('_results', '')
         model_results[model_name] = pd.read_csv(model_path + file)
-        # Load CSV file and store in a dictionary
-        file_path = os.path.join(model_path, file)
-        model_results[model_name] = pd.read_csv(file_path)
         print(f'[{model_name}]')
         print(f'BIC: {model_results[model_name]["BIC"].mean():.2f}; AIC: {model_results[model_name]["AIC"].mean():.2f}')
 
@@ -39,6 +37,7 @@ data = pd.read_csv(data_path)
 print(data.columns)
 data_subset = data[['SubNo', 'Group(1=OptHighReward;2=OptLowReward)']].drop_duplicates()
 data_subset.columns = ['participant_id', 'Group']
+data_subset.to_csv('./LeSaS1/Data/group_assignment.csv', index=False)
 
 # Calculate % of optimal choices
 optimal_choices = data.groupby('SubNo')['Optimal_Choice'].mean()
@@ -92,6 +91,7 @@ corr_2 = pg.pairwise_corr(hybrid_delta_delta_2, columns=['Optimal_Choice', 't', 
 t_test = pg.ttest(hybrid_delta_delta_1['Optimal_Choice'], hybrid_delta_delta_2['Optimal_Choice'])
 t_test1 = pg.ttest(hybrid_delta_delta_1['Optimal_Choice'], 0.5)
 t_test2 = pg.ttest(hybrid_delta_delta_2['Optimal_Choice'], 0.5)
+
 # ======================================================================================================================
 # Moving Window Analysis
 # ======================================================================================================================
@@ -142,13 +142,8 @@ hybrid = model_mv_results['hybrid_delta_delta_mv']
 hybrid = hybrid[hybrid['window_id'] <= 317]  # Limit to first 334 trials
 
 # Create the plot
-plt.figure(figsize=(10, 6))
-sns.lineplot(data=hybrid, x='window_id', y='Weight', hue='Group')
-plt.title('Alpha Values by Window Step Grouped by Participants')
-plt.xlabel('Window Step')
-plt.ylabel('Alpha Value')
-plt.savefig('./figures/alpha_moving_window.png', dpi=600, bbox_inches='tight')
-plt.show()
+side_by_side_plot(hybrid, 'window_id', 'Weight', 'Window Step', 'Weight Value',
+                  'Weight Values by Window Step Grouped by Participants', block_div=False)
 
 # Visualize model fit by time
 # Filter and create plots for BIC values across window steps for each group
@@ -216,7 +211,7 @@ for window_id in range(1, 318):
             continue  # Skip groups with less than 10 participants. There should not be any, but just in case.
 
         # Perform linear regression
-        lr_results = pg.linear_regression(group_data['Optimal_Choice'], group_data['optimal_percentage'])
+        lr_results = pg.linear_regression(group_data['Weight'], group_data['optimal_percentage'])
         slope = lr_results['coef'][1]
         intercept = lr_results['coef'][0]
         r_squared = lr_results['r2'][1]

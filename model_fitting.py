@@ -19,6 +19,7 @@ if __name__ == "__main__":
 
     delta = VisualSearchModels('delta')
     delta_PVL = VisualSearchModels('delta_PVL_relative')
+    delta_RPUT = VisualSearchModels('delta_RPUT')
     decay = VisualSearchModels('decay')
     decay_PVL = VisualSearchModels('decay_PVL_relative')
     WSLS = VisualSearchModels('WSLS')
@@ -40,6 +41,7 @@ if __name__ == "__main__":
     # dual_process_results = dual_process.fit(data_dict, num_iterations=n_iterations, weight_Gau='softmax', weight_Dir='softmax',
     #                                         arbi_option='Entropy', Dir_fun='Linear_Recency', Gau_fun='Naive_Recency', num_t=1)
     # delta_results = delta.fit(data_dict, num_iterations=n_iterations)
+    delta_RPUT_results = delta_RPUT.fit(data_dict, num_iterations=n_iterations)
     # delta_PVL_results = delta_PVL.fit(data_dict, num_iterations=n_iterations)
     # decay_results = decay.fit(data_dict, num_iterations=n_iterations)
     # decay_PVL_results = hybrid_delta_delta.fit(data_dict, num_iterations=n_iterations)
@@ -60,6 +62,7 @@ if __name__ == "__main__":
 
     # dual_process_results.to_csv('./LeSaS1/Model/dual_process_results.csv', index=False)
     # delta_results.to_csv('./LeSaS1/Model/delta_results.csv', index=False)
+    delta_RPUT_results.to_csv('./LeSaS1/Model/delta_RPUT_results.csv', index=False)
     # delta_PVL_results.to_csv('./LeSaS1/Model/delta_PVL_results.csv', index=False)
     # decay_results.to_csv('./LeSaS1/Model/decay_results.csv', index=False)
     # decay_PVL_results.to_csv('./LeSaS1/Model/decay_PVL_results.csv', index=False)
@@ -77,23 +80,23 @@ if __name__ == "__main__":
     # hybrid_delta_delta_results.to_csv('./LeSaS1/Model/hybrid_delta_delta_results.csv', index=False)
     # hybrid_delta_delta_3_results.to_csv('./LeSaS1/Model/hybrid_delta_delta_3_results.csv', index=False)
 
-    # # Fit block-wise model
-    # model_names = ['delta', 'RT_delta', 'RT_exp_basic', 'RT_exp_delta', 'hybrid_delta_delta', 'hybrid_delta_delta_3']
-    # for i in range(1, max(data['Block']) + 1):
-    #     block_data = data[data['Block'] == i]
-    #     block_dict = dict_generator(block_data, task='VS')
-    #     for j, model in enumerate([delta, RT_delta, RT_exp_basic, RT_exp_delta, hybrid_delta_delta, hybrid_delta_delta_3]):
-    #         save_dir = f'./LeSaS1/Model/Blockwise/{model_names[j]}_block_{i}_results.csv'
-    #         # Check if the file already exists
-    #         try:
-    #             existing_results = pd.read_csv(save_dir)
-    #             if not existing_results.empty:
-    #                 print(f"File {save_dir} already exists. Skipping model fitting.")
-    #                 continue
-    #         except FileNotFoundError:
-    #             pass
-    #         model_results = model.fit(block_dict, num_iterations=n_iterations)
-    #         model_results.to_csv(save_dir, index=False)
+    # Fit block-wise model
+    model_names = ['delta', 'delta_RPUT', 'RT_delta', 'RT_exp_basic', 'RT_exp_delta', 'hybrid_delta_delta', 'hybrid_delta_delta_3']
+    for i in range(1, max(data['Block']) + 1):
+        block_data = data[data['Block'] == i]
+        block_dict = dict_generator(block_data, task='VS')
+        for j, model in enumerate([delta, RT_delta, RT_exp_basic, RT_exp_delta, hybrid_delta_delta, hybrid_delta_delta_3]):
+            save_dir = f'./LeSaS1/Model/Blockwise/{model_names[j]}_block_{i}_results.csv'
+            # Check if the file already exists
+            try:
+                existing_results = pd.read_csv(save_dir)
+                if not existing_results.empty:
+                    print(f"File {save_dir} already exists. Skipping model fitting.")
+                    continue
+            except FileNotFoundError:
+                pass
+            model_results = model.fit(block_dict, num_iterations=n_iterations)
+            model_results.to_csv(save_dir, index=False)
 
     # # fit sliding window model
     # window_size = 10
@@ -113,7 +116,7 @@ if __name__ == "__main__":
 
     # Fit block-wise sliding window model
     window_size = 10
-    model_names = ['delta', 'RT_delta', 'RT_exp_basic', 'RT_exp_delta', 'hybrid_delta_delta', 'hybrid_delta_delta_3']
+    model_names = ['delta', 'delta_RPUT', 'RT_delta', 'RT_exp_basic', 'RT_exp_delta', 'hybrid_delta_delta', 'hybrid_delta_delta_3']
     for i in range(1, max(data['Block']) + 1):
         block_data = data[data['Block'] == i]
         block_dict = dict_generator(block_data, task='VS')
