@@ -104,6 +104,10 @@ for _, participant_data in concatenated_df.groupby('SubNo'):
 optimal_window_df = pd.DataFrame(optimal_choices)
 print(max(optimal_window_df['window_id']))
 
+model = smf.mixedlm("optimal_percentage ~ Group * window_id", optimal_window_df, groups=optimal_window_df["participant_id"]).fit()
+print(model.summary())
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # All data block-wise version
 # ----------------------------------------------------------------------------------------------------------------------
