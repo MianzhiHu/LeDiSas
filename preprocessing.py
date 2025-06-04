@@ -82,23 +82,21 @@ def preprocess_data(file_path, exclude_list, out_dir):
 if __name__ == "__main__":
     # Load txt file
     lesas1_file_path = './LeSaS1/Data/'
-    lesas1_exclude_list = [6, 23, 74, 90, 96, 97]
+    lesas1_exclude_list = [6, 23, 64, 74, 90, 96, 97]
     lesas1_out_dir = './LeSaS1/Data/'
 
     ledis1_file_path = './LeDiS1/Data/'
+    ledis1_exclude_list = [3, 33, 49]
     ledis1_out_dir = './LeDiS1/Data/'
 
     # Preprocess LeSaS1 data
     lesas1_raw, lesas1_cleaned = preprocess_data(lesas1_file_path, lesas1_exclude_list, lesas1_out_dir)
 
     # Preprocess LeDiS1 data
-    ledis1_raw, ledis1_cleaned = preprocess_data(ledis1_file_path, [], ledis1_out_dir)
+    ledis1_raw, ledis1_cleaned = preprocess_data(ledis1_file_path, ledis1_exclude_list, ledis1_out_dir)
 
     # read a txt
     summary = pd.read_csv('./LeDiS1/Data/summaryStats/N59Data_LEDIS1_03-Jun-2025_Summary.txt', sep='\t').dropna()
-
-    # extract the subject number array
-    subject_numbers = summary['Sub'].unique()
 
 
 

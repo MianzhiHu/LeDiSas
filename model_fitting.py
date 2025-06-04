@@ -24,6 +24,10 @@ lesas1_full_dict = dict_generator(lesas1_data_clean, task='VS')
 lesas1_3block_dict = dict_generator(lesas1_data_clean[lesas1_data_clean['Block'] <= 3], task='VS')
 lesas1_4th_block_dict = dict_generator(lesas1_data_clean[lesas1_data_clean['Block'] == 4], task='VS')
 
+ledis1_full_dict = dict_generator(ledis1_data_clean, task='VS')
+ledis1_3block_dict = dict_generator(ledis1_data_clean[ledis1_data_clean['Block'] <= 3], task='VS')
+ledis1_4th_block_dict = dict_generator(ledis1_data_clean[ledis1_data_clean['Block'] == 4], task='VS')
+
 # Calculate RT stats for exclusionary criteria
 lesas1_data_raw = calculate_rt_stats(lesas1_data_raw)
 ledis1_data_raw = calculate_rt_stats(ledis1_data_raw)
@@ -31,8 +35,12 @@ ledis1_data_raw = calculate_rt_stats(ledis1_data_raw)
 if __name__ == "__main__":
     # Define the directories for model fitting results
     lesas1_full_folder = './LeSaS1/Model/'
-    ledis1_3block_folder = './LeDiS1/Model/3block/'
+    lesas1_3block_folder = './LeDiS1/Model/3block/'
     lesas1_4thblock_folder = './LeDiS1/Model/4thblock/'
+
+    ledis1_full_folder = './LeDiS1/Model/'
+    ledis1_3block_folder = './LeDiS1/Model/3block/'
+    ledis1_4thblock_folder = './LeDiS1/Model/4thblock/'
 
     # Define the models
     delta = VisualSearchModels('delta')
@@ -62,32 +70,33 @@ if __name__ == "__main__":
                    'WSLS_delta_weight', 'WSLS_decay_weight', 'RT_exp_basic', 'RT_delta', 'RT_delta_PVL', 'RT_decay',
                    'RT_decay_PVL', 'RT_exp_delta', 'RT_exp_decay', 'hybrid_delta_delta', 'hybrid_delta_delta_3',
                    'hybrid_decay_delta', 'hybrid_decay_delta_3']
-    lesas1_folders = [lesas1_full_folder, ledis1_3block_folder, lesas1_4thblock_folder]
+    lesas1_folders = [lesas1_full_folder, lesas1_3block_folder, lesas1_4thblock_folder]
+    ledis1_folders = [ledis1_full_folder, ledis1_3block_folder, ledis1_4thblock_folder]
 
     # ==================================================================================================================
     # LeSaS1 Model Fitting (4 blocks; 3 blocks; 4th block only)
     # ==================================================================================================================
-    # # Whole-task model fitting
-    # n_iterations = 1
-    #
-    # for i, lesas1_data in enumerate([lesas1_full_dict, lesas1_3block_dict, lesas1_4th_block_dict]):
-    #     for j, model in enumerate([delta, delta_PVL, delta_RPUT, decay, decay_PVL, decay_RPUT, WSLS, WSLS_delta,
-    #                                WSLS_delta_weight, WSLS_decay_weight, RT_exp_basic, RT_delta, RT_delta_PVL, RT_decay,
-    #                                RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
-    #                                hybrid_decay_delta, hybrid_decay_delta_3]):
-    #             save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
-    #             # Check if the file already exists
-    #             try:
-    #              existing_results = pd.read_csv(save_dir)
-    #              if not existing_results.empty:
-    #                   print(f"File {save_dir} already exists. Skipping model fitting.")
-    #                   continue
-    #             except FileNotFoundError:
-    #              pass
-    #
-    #             # Fit the model to the data
-    #             model_results = model.fit(lesas1_data, num_iterations=n_iterations)
-    #             model_results.to_csv(save_dir, index=False)
+    # Whole-task model fitting
+    n_iterations = 100
+
+    for i, lesas1_data in enumerate([lesas1_full_dict, lesas1_3block_dict, lesas1_4th_block_dict]):
+        for j, model in enumerate([delta, delta_PVL, delta_RPUT, decay, decay_PVL, decay_RPUT, WSLS, WSLS_delta,
+                                   WSLS_delta_weight, WSLS_decay_weight, RT_exp_basic, RT_delta, RT_delta_PVL, RT_decay,
+                                   RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
+                                   hybrid_decay_delta, hybrid_decay_delta_3]):
+                save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
+                # Check if the file already exists
+                try:
+                 existing_results = pd.read_csv(save_dir)
+                 if not existing_results.empty:
+                      print(f"File {save_dir} already exists. Skipping model fitting.")
+                      continue
+                except FileNotFoundError:
+                 pass
+
+                # Fit the model to the data
+                model_results = model.fit(lesas1_data, num_iterations=n_iterations)
+                model_results.to_csv(save_dir, index=False)
 
     # ------------------------------------------------------------------------------------------------------------------
     # Fit the models with sliding window
@@ -121,6 +130,29 @@ if __name__ == "__main__":
     #                                                       window_size=window_size, id_col='SubNo',
     #                                                       num_iterations=n_iterations)
     # hybrid_delta_delta_3_mv.to_csv('./LeSaS1/Model/Moving_Window/hybrid_delta_delta_3_mv_results.csv', index=False)
+
+    # ==================================================================================================================
+    # LeDiS1 Model Fitting (4 blocks; 3 blocks; 4th block only)
+    # ==================================================================================================================
+    # Whole-task model fitting
+    for i, ledis1_data in enumerate([ledis1_full_dict, ledis1_3block_dict, ledis1_4th_block_dict]):
+        for j, model in enumerate([delta, delta_PVL, delta_RPUT, decay, decay_PVL, decay_RPUT, WSLS, WSLS_delta,
+                                   WSLS_delta_weight, WSLS_decay_weight, RT_exp_basic, RT_delta, RT_delta_PVL, RT_decay,
+                                   RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
+                                   hybrid_decay_delta, hybrid_decay_delta_3]):
+                save_dir = f'{ledis1_folders[i]}{model_names[j]}_results.csv'
+                # Check if the file already exists
+                try:
+                 existing_results = pd.read_csv(save_dir)
+                 if not existing_results.empty:
+                      print(f"File {save_dir} already exists. Skipping model fitting.")
+                      continue
+                except FileNotFoundError:
+                 pass
+
+                # Fit the model to the data
+                model_results = model.fit(ledis1_data, num_iterations=n_iterations)
+                model_results.to_csv(save_dir, index=False)
 
     # ==================================================================================================================
     # Block-wise model fitting (Unused)
