@@ -44,6 +44,7 @@ if __name__ == "__main__":
 
     # Define the models
     delta = VisualSearchModels('delta')
+    delta_perseveration = VisualSearchModels('delta_perseveration')
     delta_PVL = VisualSearchModels('delta_PVL_relative')
     delta_RPUT = VisualSearchModels('delta_RPUT', condition='Both')
     decay = VisualSearchModels('decay')
@@ -69,7 +70,12 @@ if __name__ == "__main__":
     model_names = ['delta', 'delta_PVL', 'delta_RPUT', 'decay', 'decay_PVL', 'decay_RPUT', 'WSLS', 'WSLS_delta',
                    'WSLS_delta_weight', 'WSLS_decay_weight', 'RT_exp_basic', 'RT_delta', 'RT_delta_PVL', 'RT_decay',
                    'RT_decay_PVL', 'RT_exp_delta', 'RT_exp_decay', 'hybrid_delta_delta', 'hybrid_delta_delta_3',
-                   'hybrid_decay_delta', 'hybrid_decay_delta_3']
+                   'hybrid_decay_delta', 'hybrid_decay_delta_3', 'delta_perseveration']
+    model_list = [delta, delta_PVL, delta_RPUT, decay, decay_PVL, decay_RPUT, WSLS, WSLS_delta,
+                  WSLS_delta_weight, WSLS_decay_weight, RT_exp_basic, RT_delta, RT_delta_PVL, RT_decay,
+                  RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
+                  hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration]
+
     lesas1_folders = [lesas1_full_folder, lesas1_3block_folder, lesas1_4thblock_folder]
     ledis1_folders = [ledis1_full_folder, ledis1_3block_folder, ledis1_4thblock_folder]
 
@@ -80,10 +86,7 @@ if __name__ == "__main__":
     n_iterations = 100
 
     for i, lesas1_data in enumerate([lesas1_full_dict, lesas1_3block_dict, lesas1_4th_block_dict]):
-        for j, model in enumerate([delta, delta_PVL, delta_RPUT, decay, decay_PVL, decay_RPUT, WSLS, WSLS_delta,
-                                   WSLS_delta_weight, WSLS_decay_weight, RT_exp_basic, RT_delta, RT_delta_PVL, RT_decay,
-                                   RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
-                                   hybrid_decay_delta, hybrid_decay_delta_3]):
+        for j, model in enumerate(model_list):
                 save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
                 # Check if the file already exists
                 try:
@@ -136,10 +139,7 @@ if __name__ == "__main__":
     # ==================================================================================================================
     # Whole-task model fitting
     for i, ledis1_data in enumerate([ledis1_full_dict, ledis1_3block_dict, ledis1_4th_block_dict]):
-        for j, model in enumerate([delta, delta_PVL, delta_RPUT, decay, decay_PVL, decay_RPUT, WSLS, WSLS_delta,
-                                   WSLS_delta_weight, WSLS_decay_weight, RT_exp_basic, RT_delta, RT_delta_PVL, RT_decay,
-                                   RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
-                                   hybrid_decay_delta, hybrid_decay_delta_3]):
+        for j, model in enumerate(model_list):
                 save_dir = f'{ledis1_folders[i]}{model_names[j]}_results.csv'
                 # Check if the file already exists
                 try:
