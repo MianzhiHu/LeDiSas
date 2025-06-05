@@ -67,14 +67,18 @@ if __name__ == "__main__":
     hybrid_decay_delta = VisualSearchModels('hybrid_decay_delta')
     hybrid_decay_delta_3 = VisualSearchModels('hybrid_decay_delta_3')
 
+    dual = dual_process.fit(lesas1_4th_block_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency', Dir_fun='Linear_Recency',
+                                          weight_Dir='softmax', weight_Gau='softmax', num_training_trials=150,
+                                          num_iterations=1)
+
     model_names = ['delta', 'delta_PVL', 'delta_RPUT', 'decay', 'decay_PVL', 'decay_RPUT', 'WSLS', 'WSLS_delta',
                    'WSLS_delta_weight', 'WSLS_decay_weight', 'RT_exp_basic', 'RT_delta', 'RT_delta_PVL', 'RT_decay',
                    'RT_decay_PVL', 'RT_exp_delta', 'RT_exp_decay', 'hybrid_delta_delta', 'hybrid_delta_delta_3',
-                   'hybrid_decay_delta', 'hybrid_decay_delta_3', 'delta_perseveration']
+                   'hybrid_decay_delta', 'hybrid_decay_delta_3', 'delta_perseveration', 'dual_process']
     model_list = [delta, delta_PVL, delta_RPUT, decay, decay_PVL, decay_RPUT, WSLS, WSLS_delta,
                   WSLS_delta_weight, WSLS_decay_weight, RT_exp_basic, RT_delta, RT_delta_PVL, RT_decay,
                   RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
-                  hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration]
+                  hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration, dual_process]
 
     lesas1_folders = [lesas1_full_folder, lesas1_3block_folder, lesas1_4thblock_folder]
     ledis1_folders = [ledis1_full_folder, ledis1_3block_folder, ledis1_4thblock_folder]
@@ -85,7 +89,7 @@ if __name__ == "__main__":
     # Whole-task model fitting
     n_iterations = 100
 
-    for i, lesas1_data in enumerate([lesas1_full_dict, lesas1_3block_dict, lesas1_4th_block_dict]):
+    for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict, lesas1_4th_block_dict]):
         for j, model in enumerate(model_list):
                 save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
                 # Check if the file already exists
@@ -97,8 +101,14 @@ if __name__ == "__main__":
                 except FileNotFoundError:
                  pass
 
+                # If the model is dual-process, fit it with specific parameters
+                if model_names[j] == 'dual_process':
+                    dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+                                     Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
+                                     num_training_trials=150, num_iterations=n_iterations)
+
                 # Fit the model to the data
-                model_results = model.fit(lesas1_data, num_iterations=n_iterations)
+                model_results = model.fit(lesas1_dict, num_iterations=n_iterations)
                 model_results.to_csv(save_dir, index=False)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -149,6 +159,12 @@ if __name__ == "__main__":
                       continue
                 except FileNotFoundError:
                  pass
+
+                # If the model is dual-process, fit it with specific parameters
+                if model_names[j] == 'dual_process':
+                    dual_process.fit(ledis1_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+                                     Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
+                                     num_training_trials=150, num_iterations=n_iterations)
 
                 # Fit the model to the data
                 model_results = model.fit(ledis1_data, num_iterations=n_iterations)
