@@ -35,41 +35,37 @@ ledis1_data_raw = calculate_rt_stats(ledis1_data_raw)
 if __name__ == "__main__":
     # Define the directories for model fitting results
     lesas1_full_folder = './LeSaS1/Model/'
-    lesas1_3block_folder = './LeDiS1/Model/3block/'
-    lesas1_4thblock_folder = './LeDiS1/Model/4thblock/'
+    lesas1_3block_folder = './LeSaS1/Model/3block/'
+    lesas1_4thblock_folder = './LeSaS1/Model/4thblock/'
 
     ledis1_full_folder = './LeDiS1/Model/'
     ledis1_3block_folder = './LeDiS1/Model/3block/'
     ledis1_4thblock_folder = './LeDiS1/Model/4thblock/'
 
     # Define the models
-    delta = VisualSearchModels('delta')
-    delta_perseveration = VisualSearchModels('delta_perseveration')
-    delta_PVL = VisualSearchModels('delta_PVL_relative')
+    delta = VisualSearchModels('delta', condition='Both')
+    delta_perseveration = VisualSearchModels('delta_perseveration', condition='Both')
+    delta_PVL = VisualSearchModels('delta_PVL_relative', condition='Both')
     delta_RPUT = VisualSearchModels('delta_RPUT', condition='Both')
-    decay = VisualSearchModels('decay')
-    decay_PVL = VisualSearchModels('decay_PVL_relative')
+    decay = VisualSearchModels('decay', condition='Both')
+    decay_PVL = VisualSearchModels('decay_PVL_relative', condition='Both')
     decay_RPUT = VisualSearchModels('decay_RPUT', condition='Both')
-    WSLS = VisualSearchModels('WSLS')
-    WSLS_delta = VisualSearchModels('WSLS_delta')
-    WSLS_delta_weight = VisualSearchModels('WSLS_delta_weight')
-    WSLS_decay_weight = VisualSearchModels('WSLS_decay_weight')
-    dual_process = DualProcessModel(task='IGT_SGT', num_options=2)
-    RT_exp_basic = VisualSearchModels('RT_exp_basic')
-    RT_delta = VisualSearchModels('RT_delta')
-    RT_delta_PVL = VisualSearchModels('RT_delta_PVL')
-    RT_decay = VisualSearchModels('RT_decay')
-    RT_decay_PVL = VisualSearchModels('RT_decay_PVL')
-    RT_exp_delta = VisualSearchModels('RT_exp_delta')
-    RT_exp_decay = VisualSearchModels('RT_exp_decay')
-    hybrid_delta_delta = VisualSearchModels('hybrid_delta_delta')
-    hybrid_delta_delta_3 = VisualSearchModels('hybrid_delta_delta_3')
-    hybrid_decay_delta = VisualSearchModels('hybrid_decay_delta')
-    hybrid_decay_delta_3 = VisualSearchModels('hybrid_decay_delta_3')
-
-    dual = dual_process.fit(lesas1_4th_block_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency', Dir_fun='Linear_Recency',
-                                          weight_Dir='softmax', weight_Gau='softmax', num_training_trials=150,
-                                          num_iterations=1)
+    WSLS = VisualSearchModels('WSLS', condition='Both')
+    WSLS_delta = VisualSearchModels('WSLS_delta', condition='Both')
+    WSLS_delta_weight = VisualSearchModels('WSLS_delta_weight', condition='Both')
+    WSLS_decay_weight = VisualSearchModels('WSLS_decay_weight', condition='Both')
+    dual_process = DualProcessModel(task='IGT_SGT', num_options=2, default_EV=0.0)
+    RT_exp_basic = VisualSearchModels('RT_exp_basic', condition='Both')
+    RT_delta = VisualSearchModels('RT_delta', condition='Both')
+    RT_delta_PVL = VisualSearchModels('RT_delta_PVL', condition='Both')
+    RT_decay = VisualSearchModels('RT_decay', condition='Both')
+    RT_decay_PVL = VisualSearchModels('RT_decay_PVL', condition='Both')
+    RT_exp_delta = VisualSearchModels('RT_exp_delta', condition='Both')
+    RT_exp_decay = VisualSearchModels('RT_exp_decay', condition='Both')
+    hybrid_delta_delta = VisualSearchModels('hybrid_delta_delta', condition='Both')
+    hybrid_delta_delta_3 = VisualSearchModels('hybrid_delta_delta_3', condition='Both')
+    hybrid_decay_delta = VisualSearchModels('hybrid_decay_delta', condition='Both')
+    hybrid_decay_delta_3 = VisualSearchModels('hybrid_decay_delta_3', condition='Both')
 
     model_names = ['delta', 'delta_PVL', 'delta_RPUT', 'decay', 'decay_PVL', 'decay_RPUT', 'WSLS', 'WSLS_delta',
                    'WSLS_delta_weight', 'WSLS_decay_weight', 'RT_exp_basic', 'RT_delta', 'RT_delta_PVL', 'RT_decay',
@@ -103,12 +99,13 @@ if __name__ == "__main__":
 
                 # If the model is dual-process, fit it with specific parameters
                 if model_names[j] == 'dual_process':
-                    dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+                    model_results = dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
                                      Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-                                     num_training_trials=150, num_iterations=n_iterations)
+                                     num_training_trials=999, num_exp_restart=9999, num_iterations=n_iterations)
+                else:
+                    # Fit the model to the data
+                    model_results = model.fit(lesas1_dict, num_iterations=n_iterations)
 
-                # Fit the model to the data
-                model_results = model.fit(lesas1_dict, num_iterations=n_iterations)
                 model_results.to_csv(save_dir, index=False)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -162,12 +159,14 @@ if __name__ == "__main__":
 
                 # If the model is dual-process, fit it with specific parameters
                 if model_names[j] == 'dual_process':
-                    dual_process.fit(ledis1_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+                    model_results = dual_process.fit(ledis1_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
                                      Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-                                     num_training_trials=150, num_iterations=n_iterations)
+                                     num_training_trials=999, num_exp_restart=9999, num_iterations=n_iterations)
 
-                # Fit the model to the data
-                model_results = model.fit(ledis1_data, num_iterations=n_iterations)
+                else:
+                    # Fit the model to the data
+                    model_results = model.fit(ledis1_data, num_iterations=n_iterations)
+
                 model_results.to_csv(save_dir, index=False)
 
     # ==================================================================================================================
