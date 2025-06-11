@@ -181,6 +181,7 @@ print(model_mv_results_df['Model'].value_counts())
 hybrid = model_mv_results['hybrid_delta_delta']
 hybrid.to_csv('./LeSaS1/Data/hybrid_decay_delta.csv', index=False)
 hybrid['Group'] = hybrid['Group'].replace({1: 'High-Reward-Optimal', 2: 'Low-Reward-Optimal'})
+hybrid['RT_Weight'] = 1 - hybrid['Weight']
 
 # Create the plot
 side_by_side_plot(hybrid, 'window_id', 'Weight', 'Window Step', 'Weight Value',
@@ -217,7 +218,7 @@ print(model_quadratic.summary())
 g = sns.lmplot(
     data=hybrid,
     x="window_id",
-    y="Weight",
+    y="RT_Weight",
     hue="Group",         # color‐code each Group
     col="Group",         # if you want separate panels per Group (side‐by‐side)
     palette="tab10",     # or choose any palette you like
@@ -229,8 +230,7 @@ g = sns.lmplot(
     aspect=1.2           # width = aspect * height
 )
 
-# 2) Adjust axis labels and title
-g.set_axis_labels("Window (continuous index)", "Weight")
+g.set_axis_labels("Window Step", "Weight of RT")
 g.set_titles(col_template="{col_name}")
 g.fig.suptitle("Quadratic Fit of Weight vs. Window by Group", y=1.02)
 

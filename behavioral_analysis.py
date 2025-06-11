@@ -107,6 +107,22 @@ plt.xlabel('Window Step')
 plt.ylabel('Optimal Choice Percentage')
 plt.savefig('./figures/optimal_choice_moving_window.png', dpi=600, bbox_inches='tight')
 
+# Fit quadratic regression model to optimal choice percentages
+model = smf.ols('optimal_percentage ~ window_id + I(window_id**2) + C(Group)', data=lesas1_optimal_window_df).fit()
+print(model.summary())
+
+# Plot the fitted quadratic regression model
+plt.clf()
+g = sns.lmplot(data=lesas1_optimal_window_df, x='window_id', y='optimal_percentage', hue='Group',
+               order=2, ci=95, height=6, aspect=1.5, scatter=False, palette='tab10', facet_kws={"legend_out": False})
+g.set_axis_labels('Window Step', 'Optimal Choice Percentage')
+plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5)
+plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5)
+plt.axvline(x=243, color='gray', linestyle='--', alpha=0.5)
+plt.title('Optimal Choice Percentage by Window Steps with Quadratic Fit')
+plt.tight_layout()
+plt.savefig('./figures/optimal_choice_moving_window_quadratic_fit.png', dpi=600, bbox_inches='tight')
+
 # ======================================================================================================================
 # LeDiS1 Behavioral Analysis
 # ======================================================================================================================
