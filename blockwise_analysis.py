@@ -26,35 +26,6 @@ optimal_df = optimal_choices.reset_index()
 optimal_df.columns = ['participant_id', 'Optimal_Choice']
 optimal_df = pd.merge(optimal_df, group_assignment, on='participant_id')
 
-# ======================================================================================================================
-# Behavioral Analysis
-# ======================================================================================================================
-# Define the number of blocks
-data_3blocks = data[data['Block'].isin([1, 2, 3])]
-data_4blocks = data[data['Block'].isin([1, 2, 3, 4])]
-
-# one-sample t-test for optimal choice percentage
-for data_block in [data_3blocks, data_4blocks]:
-    print(f'\nAnalyzing data for {len(data_block["SubNo"].unique())} participants in {data_block["Block"].nunique()} blocks:')
-    # Calculate % of optimal choices
-    optimal_choices = data_block.groupby('SubNo')['Optimal_Choice'].mean()
-    optimal_df = optimal_choices.reset_index()
-    optimal_df.columns = ['participant_id', 'Optimal_Choice']
-    optimal_df = pd.merge(optimal_df, group_assignment, on='participant_id')
-    t_between, p_between = stats.ttest_ind(
-        optimal_df[optimal_df['Group'] == 1]['Optimal_Choice'],
-        optimal_df[optimal_df['Group'] == 2]['Optimal_Choice']
-    )
-    print(f'Between Groups - T-test: t-statistic = {t_between:.3f}, p-value = {p_between:.3f}')
-    for group in [1, 2]:
-        group_data = optimal_df[optimal_df['Group'] == group]['Optimal_Choice']
-        t_stat, p_value = stats.ttest_1samp(group_data, 0.5)
-        print(f'Group {group} - T-test: t-statistic = {t_stat:.3f}, p-value = {p_value:.3f}')
-
-# Perform mixed ANOVA for 3 blocks
-mix_anova_results_3b = pg.mixed_anova(data=data_3blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo')
-mix_anova_results_4b = pg.mixed_anova(data=data_4blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo')
-
 # Behavioral windows
 file_path = './LeSaS1/Data/'
 dataframes = []
@@ -85,6 +56,7 @@ concatenated_df = concatenated_df[concatenated_df['Block'].isin([1, 2, 3, 4])]
 
 # Calculate optimal choice percentage in moving windows
 window_size = 10
+
 # ----------------------------------------------------------------------------------------------------------------------
 # All data version
 # ----------------------------------------------------------------------------------------------------------------------
@@ -106,7 +78,6 @@ print(max(optimal_window_df['window_id']))
 
 model = smf.mixedlm("optimal_percentage ~ Group * window_id", optimal_window_df, groups=optimal_window_df["participant_id"]).fit()
 print(model.summary())
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 # All data block-wise version

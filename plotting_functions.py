@@ -27,8 +27,13 @@ def side_by_side_plot(data, x, y, x_label, y_label, title, block_div=None):
         if block_div:
             for pos in break_positions:
                 ax.axvline(x=pos, color="gray", linestyle="--", linewidth=0.8)
+        else:
+            ax.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block 1-2 Transition')
+            ax.axvline(x=159, color='gray', linestyle='--', alpha=0.5, label='Block 2-3 Transition')
+            ax.axvline(x=243, color='gray', linestyle='--', alpha=0.5, label='Block 3-4 Transition')
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
+        
 
     g.set_titles(col_template="{col_name}")  # Use the Group name as each panel’s title
     g.fig.suptitle(title)
