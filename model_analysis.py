@@ -111,6 +111,9 @@ create_model_summary_table({model: ledis1_model_results[model] for model in sele
 create_model_summary_table({model: ledis1_3blocks_model_results[model] for model in selected_models},
                             './LeDiS1/3blocks_selected_model_summary.docx')
 
+print('=' * 50)
+print('Model summary tables created successfully.')
+
 # ======================================================================================================================
 # Data Analysis
 # ======================================================================================================================

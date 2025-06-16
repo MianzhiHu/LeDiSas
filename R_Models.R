@@ -14,7 +14,7 @@ library(changepoint)
 # Read the data
 # ==============================================================================
 hybrid_data <- read.csv("C:/Users/zuire/PycharmProjects/LeDiSas/LeSaS1/Data/hybrid_delta_delta.csv")
-hybrid_data_mv <- read.csv("C:/Users/zuire/PycharmProjects/LeDiSas/LeSaS1/Data/hybrid_delta_delta_mv.csv")
+hybrid_data_mv <- read.csv("C:/Users/zuire/PycharmProjects/LeDiSas/LeSaS1/Data/hybrid_decay_delta.csv")
 hybrid_data$Group <- factor(hybrid_data$Group, levels = c(1, 2), 
                             labels = c('OptHighReward', 'OptLowReward'))
 hybrid_data_mv$Group <- factor(hybrid_data_mv$Group, levels = c(1, 2), 
@@ -35,7 +35,14 @@ plot(allEffects(glm_model))
 # ==============================================================================
 # Linear Mixed-Effects Models
 # ==============================================================================
-mixed_effect <- lmer(optimal_percentage ~ Group * window_id * Weight +  (1|participant_id),
+mixed_effect <- lmer(optimal_percentage ~ Group + window_id + Weight +  (1|participant_id),
+                     data = hybrid_data_mv)
+
+summary(mixed_effect)
+anova(mixed_effect)
+plot(allEffects(mixed_effect))
+
+mixed_effect <- lmer(Weight ~ Group * poly(window_id, 2) +  (1|participant_id),
                      data = hybrid_data_mv)
 
 summary(mixed_effect)
