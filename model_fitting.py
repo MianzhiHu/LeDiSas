@@ -143,7 +143,8 @@ if __name__ == "__main__":
         # Fit the model to the data with a sliding window
         model_results = moving_window_model_fitting(lesas1_data_raw, model, task='VS', id_col='SubNo',
                                                     num_iterations=n_iterations, window_size=window_size,
-                                                    filter_fn=exclusionary_criteria)
+                                                    filter_fn=exclusionary_criteria, restart_EV=True,
+                                                    initial_mode='first_trial')
         model_results.to_csv(save_dir, index=False)
 
     # ==================================================================================================================
@@ -170,7 +171,7 @@ if __name__ == "__main__":
 
                 else:
                     # Fit the model to the data
-                    model_results = model.fit(ledis1_data, num_iterations=n_iterations)
+                    model_results = model.fit(ledis1_data, num_iterations=n_iterations, initial_mode='first_trial')
 
                 model_results.to_csv(save_dir, index=False)
 
@@ -191,7 +192,8 @@ if __name__ == "__main__":
         # Fit the model to the data with a sliding window
         model_results = moving_window_model_fitting(ledis1_data_raw, model, task='VS', id_col='SubNo',
                                                     num_iterations=n_iterations, window_size=window_size,
-                                                    filter_fn=exclusionary_criteria)
+                                                    filter_fn=exclusionary_criteria, restart_EV=True,
+                                                    initial_mode='first_trial')
         model_results.to_csv(save_dir, index=False)
 
     # ==================================================================================================================
