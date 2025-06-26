@@ -99,7 +99,7 @@ if __name__ == "__main__":
     # Whole-task model fitting
     n_iterations = 100
 
-    for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict, lesas1_4th_block_dict]):
+    for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict]):
         for j, model in enumerate(model_list):
                 save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
                 # Check if the file already exists
@@ -115,12 +115,12 @@ if __name__ == "__main__":
                 if model_names[j] == 'dual_process':
                     model_results = dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
                                      Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[0.0, 0.0],
-                                     initial_mode='first_trial', num_iterations=n_iterations)
+                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5],
+                                     initial_mode='fixed', num_iterations=n_iterations)
 
                 else:
                     # Fit the model to the data
-                    model_results = model.fit(lesas1_dict, num_iterations=n_iterations, initial_mode='first_trial')
+                    model_results = model.fit(lesas1_dict, num_iterations=n_iterations, initial_mode='fixed')
 
                 model_results.to_csv(save_dir, index=False)
 
@@ -144,14 +144,14 @@ if __name__ == "__main__":
         model_results = moving_window_model_fitting(lesas1_data_raw, model, task='VS', id_col='SubNo',
                                                     num_iterations=n_iterations, window_size=window_size,
                                                     filter_fn=exclusionary_criteria, restart_EV=True,
-                                                    initial_mode='first_trial')
+                                                    initial_EV=[0.5, 0.5], initial_mode='fixed')
         model_results.to_csv(save_dir, index=False)
 
     # ==================================================================================================================
     # LeDiS1 Model Fitting (4 blocks; 3 blocks; 4th block only)
     # ==================================================================================================================
     # Whole-task model fitting
-    for i, ledis1_data in enumerate([ledis1_full_dict, ledis1_3block_dict, ledis1_4th_block_dict]):
+    for i, ledis1_data in enumerate([ledis1_full_dict, ledis1_3block_dict]):
         for j, model in enumerate(model_list):
                 save_dir = f'{ledis1_folders[i]}{model_names[j]}_results.csv'
                 # Check if the file already exists
@@ -167,11 +167,11 @@ if __name__ == "__main__":
                 if model_names[j] == 'dual_process':
                     model_results = dual_process.fit(ledis1_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
                                      Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-                                     num_training_trials=999, num_exp_restart=9999, num_iterations=n_iterations)
+                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5], num_iterations=n_iterations)
 
                 else:
                     # Fit the model to the data
-                    model_results = model.fit(ledis1_data, num_iterations=n_iterations, initial_mode='first_trial')
+                    model_results = model.fit(ledis1_data, num_iterations=n_iterations, initial_EV=[0.5, 0.5], initial_mode='fixed')
 
                 model_results.to_csv(save_dir, index=False)
 
@@ -193,7 +193,7 @@ if __name__ == "__main__":
         model_results = moving_window_model_fitting(ledis1_data_raw, model, task='VS', id_col='SubNo',
                                                     num_iterations=n_iterations, window_size=window_size,
                                                     filter_fn=exclusionary_criteria, restart_EV=True,
-                                                    initial_mode='first_trial')
+                                                    initial_mode='fixed', initial_EV=[0.5, 0.5])
         model_results.to_csv(save_dir, index=False)
 
     # ==================================================================================================================
