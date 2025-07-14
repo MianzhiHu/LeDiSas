@@ -15,6 +15,7 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from model_fitting import exclusionary_criteria
 from preprocessing import calculate_rt_stats
+from utils.VisualSearchModels import behavioral_moving_window
 
 # load the data
 lesas1_data_raw = pd.read_csv('./LeSaS1/Data/raw_data.csv')
@@ -78,23 +79,7 @@ lesas1_mix_anova_results_4b = pg.mixed_anova(data=lesas1_data_4blocks, dv='Optim
 # ----------------------------------------------------------------------------------------------------------------------
 # Define the window size
 window_size = 10
-
-lesas1_optimal_choices = []
-
-for _, participant_data in lesas1_data_raw.groupby('SubNo'):
-    for i in range(len(participant_data) - window_size + 1):
-        window = participant_data.iloc[i:i + window_size]
-        window = exclusionary_criteria(window)
-        optimal_percent = np.mean(window['Optimal_Choice'])
-        lesas1_optimal_choices.append({
-            'participant_id': participant_data['SubNo'].iloc[0],
-            'window_id': i + 1,
-            'optimal_percentage': optimal_percent,
-            'Group': participant_data['Group'].iloc[0]
-        })
-
-lesas1_optimal_window_df = pd.DataFrame(lesas1_optimal_choices)
-lesas1_optimal_window_df['Group'] = lesas1_optimal_window_df['Group'].map({1: 'High-Reward-Optimal', 2: 'Low-Reward-Optimal'})
+lesas1_optimal_window_df = behavioral_moving_window(lesas1_data_raw, window_size, exclusionary_criteria)
 
 # Create a plot for optimal choice percentages
 plt.figure(figsize=(10, 6))
@@ -114,7 +99,7 @@ print(model.summary())
 # Plot the fitted quadratic regression model
 plt.clf()
 g = sns.lmplot(data=lesas1_optimal_window_df, x='window_id', y='optimal_percentage', hue='Group',
-               order=2, ci=95, height=6, aspect=1.5, scatter=False, palette='tab10', facet_kws={"legend_out": False})
+               order=1, ci=95, height=6, aspect=1.5, scatter=False, palette='tab10', facet_kws={"legend_out": False})
 g.set_axis_labels('Window Step', 'Optimal Choice Percentage')
 plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5)
 plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5)
@@ -123,66 +108,170 @@ plt.title('Optimal Choice Percentage by Window Steps with Quadratic Fit')
 plt.tight_layout()
 plt.savefig('./figures/optimal_choice_moving_window_quadratic_fit.png', dpi=600, bbox_inches='tight')
 
-# ======================================================================================================================
-# LeDiS1 Behavioral Analysis
-# ======================================================================================================================
 # ----------------------------------------------------------------------------------------------------------------------
-# Behavioral Data Analysis
+# Now we group participants by their choice patterns and reanalyze the data
+# By Blocks
 # ----------------------------------------------------------------------------------------------------------------------
-# Define the number of blocks
-ledis1_data_3blocks = ledis1_data_clean[ledis1_data_clean['Block'].isin([1, 2, 3])]
-ledis1_data_4blocks = ledis1_data_clean[ledis1_data_clean['Block'].isin([1, 2, 3, 4])]
+# Group participants based on the final block they reached
+# Get participants who reached block 3 as their final block
+lesas1_max_block = lesas1_data_clean.groupby('SubNo')['Block'].max()
+lesas1_b3 = lesas1_data_raw[lesas1_data_raw['SubNo'].isin(lesas1_max_block[lesas1_max_block == 3].index)]
+lesas1_b4 = lesas1_data_raw[lesas1_data_raw['SubNo'].isin(lesas1_max_block[lesas1_max_block == 4].index)]
+print(f'Number of participants who reached Block 3: {len(lesas1_b3["SubNo"].unique())}')
+print(f'Number of participants who reached Block 4: {len(lesas1_b4["SubNo"].unique())}')
 
-# one-sample t-test for optimal choice percentage
-for data_block in [ledis1_data_3blocks, ledis1_data_4blocks]:
-    print(f'\nAnalyzing data for {len(data_block["SubNo"].unique())} participants in {data_block["Block"].nunique()} blocks:')
-    # Calculate % of optimal choices
-    subj_means = data_block.groupby(['SubNo', 'Group'])['Optimal_Choice'].mean().reset_index()
-    t_between, p_between = stats.ttest_ind(
-        subj_means[subj_means['Group'] == 1]['Optimal_Choice'],
-        subj_means[subj_means['Group'] == 2]['Optimal_Choice']
-    )
-    print(f'Average for Group 1: {subj_means[subj_means["Group"] == 1]["Optimal_Choice"].mean():.3f}')
-    print(f'Average for Group 2: {subj_means[subj_means["Group"] == 2]["Optimal_Choice"].mean():.3f}')
-    print(f'Between Groups - T-test: t-statistic = {t_between:.3f}, p-value = {p_between:.3f}')
-    for group in [1, 2]:
-        group_data = subj_means[subj_means['Group'] == group]['Optimal_Choice']
-        t_stat, p_value = stats.ttest_1samp(group_data, 0.5)
-        print(f'Group {group} - T-test: t-statistic = {t_stat:.3f}, p-value = {p_value:.3f}')
+lesas1_b3_optimal_window = behavioral_moving_window(lesas1_b3, window_size, exclusionary_criteria)
+lesas1_b4_optimal_window = behavioral_moving_window(lesas1_b4, window_size, exclusionary_criteria)
 
-# Perform mixed ANOVA for 3 blocks
-ledis1_mix_anova_results_3b = pg.mixed_anova(data=ledis1_data_3blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo')
-ledis1_mix_anova_results_4b = pg.mixed_anova(data=ledis1_data_4blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo')
-
-# ----------------------------------------------------------------------------------------------------------------------
-# Behavioral Windows
-# ----------------------------------------------------------------------------------------------------------------------
-# Define the window size
-window_size = 10
-ledis1_optimal_choices = []
-
-for _, participant_data in ledis1_data_raw.groupby('SubNo'):
-    for i in range(len(participant_data) - window_size + 1):
-        window = participant_data.iloc[i:i + window_size]
-        window = exclusionary_criteria(window)
-        optimal_percent = np.mean(window['Optimal_Choice'])
-        ledis1_optimal_choices.append({
-            'participant_id': participant_data['SubNo'].iloc[0],
-            'window_id': i + 1,
-            'optimal_percentage': optimal_percent,
-            'Group': participant_data['Group'].iloc[0]
-        })
-ledis1_optimal_window_df = pd.DataFrame(ledis1_optimal_choices)
-ledis1_optimal_window_df['Group'] = ledis1_optimal_window_df['Group'].map({1: 'High-Variance-Optimal', 2: 'Low-Variance-Optimal'})
-
-# Create a plot for optimal choice percentages
+# Create a plot for optimal choice percentages for Block 3
 plt.figure(figsize=(10, 6))
-sns.lineplot(data=ledis1_optimal_window_df, x='window_id', y='optimal_percentage', hue='Group')
+sns.lineplot(data=lesas1_b4_optimal_window, x='window_id', y='optimal_percentage', hue='Group')
 plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block 1-2 Transition')
 plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5, label='Block 2-3 Transition')
 plt.axvline(x=243, color='gray', linestyle='--', alpha=0.5, label='Block 3-4 Transition')
 plt.title('Optimal Choice Percentage by Window Steps')
 plt.xlabel('Window Step')
 plt.ylabel('Optimal Choice Percentage')
-plt.savefig('./figures/ledis1_optimal_choice_moving_window.png', dpi=600, bbox_inches='tight')
-# ======================================================================================================================
+plt.savefig('./figures/optimal_choice_moving_window_b4.png', dpi=600, bbox_inches='tight')
+
+# ----------------------------------------------------------------------------------------------------------------------
+# By model fit
+# ----------------------------------------------------------------------------------------------------------------------
+value_based_index = pd.read_csv('./LeSaS1/Data/value_based_participants.csv')
+RT_based_index = pd.read_csv('./LeSaS1/Data/RT_based_participants.csv')
+RPUT_based_index = pd.read_csv('./LeSaS1/Data/RPUT_based_participants.csv')
+
+# Get participants
+value_based_participants = lesas1_data_raw[lesas1_data_raw['SubNo'].isin(value_based_index['participant_id'])]
+RT_based_participants = lesas1_data_raw[lesas1_data_raw['SubNo'].isin(RT_based_index['participant_id'])]
+RPUT_based_participants = lesas1_data_raw[lesas1_data_raw['SubNo'].isin(RPUT_based_index['participant_id'])]
+# print the number of participants grouped by group
+print("\nValue-based participants by group:")
+print(value_based_participants.groupby('Group')['SubNo'].nunique())
+print("\nRT-based participants by group:")
+print(RT_based_participants.groupby('Group')['SubNo'].nunique())
+print("\nRPUT-based participants by group:")
+print(RPUT_based_participants.groupby('Group')['SubNo'].nunique())
+
+# Create moving windows for each group
+value_based_optimal_window = behavioral_moving_window(value_based_participants, window_size, exclusionary_criteria)
+RT_based_optimal_window = behavioral_moving_window(RT_based_participants, window_size, exclusionary_criteria)
+RPUT_based_optimal_window = behavioral_moving_window(RPUT_based_participants, window_size, exclusionary_criteria)
+
+# Create a plot for optimal choice percentages by model fit
+plt.figure(figsize=(10, 6))
+sns.lineplot(data=RPUT_based_optimal_window, x='window_id', y='optimal_percentage', hue='Group')
+plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block 1-2 Transition')
+plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5, label='Block 2-3 Transition')
+plt.axvline(x=243, color='gray', linestyle='--', alpha=0.5, label='Block 3-4 Transition')
+plt.title('Optimal Choice Percentage by Window Steps')
+plt.xlabel('Window Step')
+plt.ylabel('Optimal Choice Percentage')
+plt.savefig('./figures/optimal_choice_moving_window_RPUT.png', dpi=600, bbox_inches='tight')
+
+# Now analyze the total points earned by each group
+# Incorporate the best-fitted model into data
+model_assignments = pd.DataFrame({
+    'SubNo': list(value_based_index['participant_id']) +
+             list(RT_based_index['participant_id']) +
+             list(RPUT_based_index['participant_id']),
+    'model_type': ['value_based'] * len(value_based_index) +
+                  ['RT_based'] * len(RT_based_index) +
+                  ['RPUT_based'] * len(RPUT_based_index)
+})
+
+# Calculate total points per participant
+points_by_participant = lesas1_data_clean.groupby('SubNo')['OutcomeValue'].sum().reset_index()
+optimal_choice_by_participant = lesas1_data_clean.groupby('SubNo')['Optimal_Choice'].mean().reset_index()
+summary = pd.merge(points_by_participant, optimal_choice_by_participant, on='SubNo')
+summary = pd.merge(summary, model_assignments, on='SubNo')
+summary = pd.merge(summary, lesas1_group_assignment[['participant_id', 'Group']], left_on='SubNo', right_on='participant_id')
+summary.to_csv('./LeSaS1/Data/summary.csv', index=False)
+lesas1_data_clean = pd.merge(lesas1_data_clean, model_assignments, on='SubNo', how='left')
+lesas1_data_clean.to_csv('./LeSaS1/Data/data_clean_model.csv', index=False)
+
+# ANOVA
+anova_results = pg.anova(data=summary, dv='OutcomeValue', between=['model_type', 'Group'])
+
+# Create boxplot of points by model type and group
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=summary, x='model_type', y='OutcomeValue', hue='Group')
+plt.title('Total Points by Model Type and Group')
+plt.xlabel('Model Type')
+plt.ylabel('Total Points')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.savefig('./figures/points_by_model_type.png', dpi=600, bbox_inches='tight')
+
+# check b4 participants by model type
+b4_participants = lesas1_data_clean[lesas1_data_clean['SubNo'].isin(lesas1_max_block[lesas1_max_block == 4].index)]
+b4_participants = pd.merge(b4_participants, model_assignments, on='SubNo', how='left')
+# print the number of participants in each model type
+print("\nB4 Participants by Model Type:")
+print(b4_participants.groupby(['Group', 'model_type'])['SubNo'].nunique())
+
+
+
+# # ======================================================================================================================
+# # LeDiS1 Behavioral Analysis
+# # ======================================================================================================================
+# # ----------------------------------------------------------------------------------------------------------------------
+# # Behavioral Data Analysis
+# # ----------------------------------------------------------------------------------------------------------------------
+# # Define the number of blocks
+# ledis1_data_3blocks = ledis1_data_clean[ledis1_data_clean['Block'].isin([1, 2, 3])]
+# ledis1_data_4blocks = ledis1_data_clean[ledis1_data_clean['Block'].isin([1, 2, 3, 4])]
+#
+# # one-sample t-test for optimal choice percentage
+# for data_block in [ledis1_data_3blocks, ledis1_data_4blocks]:
+#     print(f'\nAnalyzing data for {len(data_block["SubNo"].unique())} participants in {data_block["Block"].nunique()} blocks:')
+#     # Calculate % of optimal choices
+#     subj_means = data_block.groupby(['SubNo', 'Group'])['Optimal_Choice'].mean().reset_index()
+#     t_between, p_between = stats.ttest_ind(
+#         subj_means[subj_means['Group'] == 1]['Optimal_Choice'],
+#         subj_means[subj_means['Group'] == 2]['Optimal_Choice']
+#     )
+#     print(f'Average for Group 1: {subj_means[subj_means["Group"] == 1]["Optimal_Choice"].mean():.3f}')
+#     print(f'Average for Group 2: {subj_means[subj_means["Group"] == 2]["Optimal_Choice"].mean():.3f}')
+#     print(f'Between Groups - T-test: t-statistic = {t_between:.3f}, p-value = {p_between:.3f}')
+#     for group in [1, 2]:
+#         group_data = subj_means[subj_means['Group'] == group]['Optimal_Choice']
+#         t_stat, p_value = stats.ttest_1samp(group_data, 0.5)
+#         print(f'Group {group} - T-test: t-statistic = {t_stat:.3f}, p-value = {p_value:.3f}')
+#
+# # Perform mixed ANOVA for 3 blocks
+# ledis1_mix_anova_results_3b = pg.mixed_anova(data=ledis1_data_3blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo')
+# ledis1_mix_anova_results_4b = pg.mixed_anova(data=ledis1_data_4blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo')
+#
+# # ----------------------------------------------------------------------------------------------------------------------
+# # Behavioral Windows
+# # ----------------------------------------------------------------------------------------------------------------------
+# # Define the window size
+# window_size = 10
+# ledis1_optimal_choices = []
+#
+# for _, participant_data in ledis1_data_raw.groupby('SubNo'):
+#     for i in range(len(participant_data) - window_size + 1):
+#         window = participant_data.iloc[i:i + window_size]
+#         window = exclusionary_criteria(window)
+#         optimal_percent = np.mean(window['Optimal_Choice'])
+#         ledis1_optimal_choices.append({
+#             'participant_id': participant_data['SubNo'].iloc[0],
+#             'window_id': i + 1,
+#             'optimal_percentage': optimal_percent,
+#             'Group': participant_data['Group'].iloc[0]
+#         })
+# ledis1_optimal_window_df = pd.DataFrame(ledis1_optimal_choices)
+# ledis1_optimal_window_df['Group'] = ledis1_optimal_window_df['Group'].map({1: 'High-Variance-Optimal', 2: 'Low-Variance-Optimal'})
+#
+# # Create a plot for optimal choice percentages
+# plt.figure(figsize=(10, 6))
+# sns.lineplot(data=ledis1_optimal_window_df, x='window_id', y='optimal_percentage', hue='Group')
+# plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block 1-2 Transition')
+# plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5, label='Block 2-3 Transition')
+# plt.axvline(x=243, color='gray', linestyle='--', alpha=0.5, label='Block 3-4 Transition')
+# plt.title('Optimal Choice Percentage by Window Steps')
+# plt.xlabel('Window Step')
+# plt.ylabel('Optimal Choice Percentage')
+# plt.savefig('./figures/ledis1_optimal_choice_moving_window.png', dpi=600, bbox_inches='tight')
+#

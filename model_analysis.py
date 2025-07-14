@@ -12,7 +12,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import pingouin as pg
 from scipy import stats
 from plotting_functions import *
-from utils.VisualSearchModels import create_model_summary_table
+from utils.VisualSearchModels import create_model_summary_table, create_model_summary_df
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
@@ -99,17 +99,27 @@ create_model_summary_table({model: lesas1_model_results[model] for model in hybr
                             './LeSaS1/hybrid_model_summary.docx')
 
 # Create model summary tables for selected models
-selected_models = ['delta', 'delta_RPUT', 'decay', 'decay_RPUT', 'RT_delta', 'hybrid_delta_delta', 'hybrid_decay_delta']
+selected_models = ['delta', 'delta_RPUT', 'decay', 'decay_RPUT', 'RT_delta', 'RT_decay']
 create_model_summary_table({model: lesas1_model_results[model] for model in selected_models},
                             './LeSaS1/selected_model_summary.docx')
 create_model_summary_table({model: lesas1_3blocks_model_results[model] for model in selected_models},
                             './LeSaS1/3blocks_selected_model_summary.docx')
 create_model_summary_table({model: lesas1_4blocks_model_results[model] for model in selected_models},
                             './LeSaS1/4blocks_selected_model_summary.docx')
-create_model_summary_table({model: ledis1_model_results[model] for model in selected_models},
-                           './LeDiS1/selected_model_summary.docx')
-create_model_summary_table({model: ledis1_3blocks_model_results[model] for model in selected_models},
-                            './LeDiS1/3blocks_selected_model_summary.docx')
+# create_model_summary_table({model: ledis1_model_results[model] for model in selected_models},
+#                            './LeDiS1/selected_model_summary.docx')
+# create_model_summary_table({model: ledis1_3blocks_model_results[model] for model in selected_models},
+#                             './LeDiS1/3blocks_selected_model_summary.docx')
+
+_, best = create_model_summary_df({model: lesas1_model_results[model] for model in selected_models}, return_best=True)
+
+# save the value-based participants
+lesas1_value_based_participants = best[best['Model'].isin(['delta', 'decay'])]['participant_id']
+lesas1_RT_based_participants = best[best['Model'].isin(['RT_delta', 'RT_decay'])]['participant_id']
+lesas1_RPUT_based_participants = best[best['Model'].isin(['delta_RPUT', 'decay_RPUT'])]['participant_id']
+lesas1_value_based_participants.to_csv('./LeSaS1/Data/value_based_participants.csv', index=False)
+lesas1_RT_based_participants.to_csv('./LeSaS1/Data/RT_based_participants.csv', index=False)
+lesas1_RPUT_based_participants.to_csv('./LeSaS1/Data/RPUT_based_participants.csv', index=False)
 
 print('=' * 50)
 print('Model summary tables created successfully.')
