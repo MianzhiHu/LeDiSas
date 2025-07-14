@@ -48,3 +48,30 @@ mixed_effect <- lmer(Weight ~ Group * poly(window_id, 2) +  (1|participant_id),
 summary(mixed_effect)
 anova(mixed_effect)
 plot(allEffects(mixed_effect))
+
+# ==============================================================================
+# Read the data
+# ==============================================================================
+modeled_data <- read.csv("C:/Users/zuire/PycharmProjects/LeDiSas/LeSaS1/Data/data_clean_model.csv")
+modeled_data$Group <- factor(modeled_data$Group, levels = c(1, 2), 
+                            labels = c('OptHighReward', 'OptLowReward'))
+modeled_data$model_type <- factor(modeled_data$model_type)
+
+mixed_effect <- lmer(OutcomeValue ~  Block + Group * model_type + (1|SubNo),
+                     data = modeled_data)
+summary(mixed_effect)
+anova(mixed_effect)
+plot(allEffects(mixed_effect))
+
+# ==============================================================================
+# Summary
+# ==============================================================================
+summary_data <- read.csv("C:/Users/zuire/PycharmProjects/LeDiSas/LeSaS1/Data/summary.csv")
+summary_data$Group <- factor(summary_data$Group, levels = c(1, 2), 
+                             labels = c('OptHighReward', 'OptLowReward'))
+summary_data$model_type <- factor(summary_data$model_type)
+
+mixed_effect <- glm(Optimal_Choice ~  Group * model_type, data = summary_data)
+summary(mixed_effect)
+anova(mixed_effect)
+plot(allEffects(mixed_effect))
