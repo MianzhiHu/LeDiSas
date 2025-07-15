@@ -9,6 +9,8 @@ library(sjPlot)
 library(segmented)
 library(survival)
 library(changepoint)
+library(car)
+library(emmeans)
 
 # ==============================================================================
 # Read the data
@@ -55,14 +57,30 @@ plot(allEffects(mixed_effect))
 modeled_data <- read.csv("C:/Users/zuire/PycharmProjects/LeDiSas/LeSaS1/Data/data_clean_model.csv")
 modeled_data$Group <- factor(modeled_data$Group, levels = c(1, 2), 
                             labels = c('OptHighReward', 'OptLowReward'))
-modeled_data$model_type <- factor(modeled_data$model_type)
+# modeled_data$model_type <- factor(modeled_data$model_type, 
+#                                   levels = c('value_based', 'RT_based', 'RPUT_based'))
+modeled_data$model_type <- factor(modeled_data$model_type, 
+                                  levels = c('RT_based', 'value_based', 'RPUT_based'))
+modeled_data <- modeled_data %>%
+  filter(Group == 'OptHighReward')
 
-mixed_effect <- lmer(OutcomeValue ~  Block + Group * model_type + (1|SubNo),
+mixed_effect <- lmer(Optimal_Choice ~  Block + model_type + (1|SubNo),
+                     data = modeled_data)
+
+mixed_effect <- lmer(Optimal_Choice ~  Block + Group * model_type + (1|SubNo),
                      data = modeled_data)
 summary(mixed_effect)
 anova(mixed_effect)
 plot(allEffects(mixed_effect))
 
+# Get estimated marginal means
+emm <- emmeans(mixed_effect, ~ Group * model_type)
+
+# View the table
+summary(emm)
+
+# Contrast between groups within RT-based participants
+contrast(emm, method = "pairwise", by = "model_type", adjust = "none")
 # ==============================================================================
 # Summary
 # ==============================================================================
