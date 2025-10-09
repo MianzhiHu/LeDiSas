@@ -69,36 +69,39 @@ if __name__ == "__main__":
     RT_decay = VisualSearchModels('RT_decay')
     RT_decay_PVL = VisualSearchModels('RT_decay_PVL')
     RT_exp_delta = VisualSearchModels('RT_exp_delta')
-    RT_exp_decay = VisualSearchModels('RT_exp_decay')
     hybrid_delta_delta = VisualSearchModels('hybrid_delta_delta')
     hybrid_delta_delta_3 = VisualSearchModels('hybrid_delta_delta_3')
     hybrid_decay_delta = VisualSearchModels('hybrid_decay_delta')
     hybrid_decay_delta_3 = VisualSearchModels('hybrid_decay_delta_3')
-    hybrid_WSLS_delta = VisualSearchModels('hybrid_WSLS_delta')
+    hybrid_decay_decay = VisualSearchModels('hybrid_decay_decay')
+    hybrid_decay_decay_3 = VisualSearchModels('hybrid_decay_decay_3')
 
-    model_names = ['delta', 'delta_PVL', 'delta_RPUT', 'decay', 'decay_PVL', 'decay_RPUT', 'WSLS', 'WSLS_delta',
-                   'WSLS_delta_weight', 'WSLS_decay_weight', 'RT_exp_basic', 'RT_delta', 'RT_delta_PVL', 'RT_decay',
-                   'RT_decay_PVL', 'RT_exp_delta', 'RT_exp_decay', 'hybrid_delta_delta', 'hybrid_delta_delta_3',
-                   'hybrid_decay_delta', 'hybrid_decay_delta_3', 'delta_perseveration', 'hybrid_WSLS_delta', 'dual_process']
-    model_list = [delta, delta_PVL, delta_RPUT, decay, decay_PVL, decay_RPUT, WSLS, WSLS_delta,
-                  WSLS_delta_weight, WSLS_decay_weight, RT_exp_basic, RT_delta, RT_delta_PVL, RT_decay,
-                  RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
-                  hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration, hybrid_WSLS_delta, dual_process]
+    # model_names = ['delta', 'delta_PVL', 'delta_RPUT', 'decay', 'decay_PVL', 'decay_RPUT', 'WSLS', 'WSLS_delta',
+    #                'WSLS_delta_weight', 'WSLS_decay_weight', 'RT_exp_basic', 'RT_delta', 'RT_delta_PVL', 'RT_decay',
+    #                'RT_decay_PVL', 'RT_exp_delta', 'RT_exp_decay', 'hybrid_delta_delta', 'hybrid_delta_delta_3',
+    #                'hybrid_decay_delta', 'hybrid_decay_delta_3', 'delta_perseveration', 'hybrid_WSLS_delta', 'dual_process']
+    # model_list = [delta, delta_PVL, delta_RPUT, decay, decay_PVL, decay_RPUT, WSLS, WSLS_delta,
+    #               WSLS_delta_weight, WSLS_decay_weight, RT_exp_basic, RT_delta, RT_delta_PVL, RT_decay,
+    #               RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
+    #               hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration, hybrid_WSLS_delta, dual_process]
 
-    moving_window_model_names = ['delta', 'decay', 'RT_delta', 'hybrid_delta_delta', 'hybrid_decay_delta',
-                                 'hybrid_delta_delta', 'WSLS', 'hybrid_WSLS_delta']
-    moving_window_model_list = [delta, decay, RT_delta, hybrid_delta_delta, hybrid_decay_delta, hybrid_delta_delta,
-                                WSLS, hybrid_WSLS_delta]
+    model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT', 'hybrid_delta_delta', 'hybrid_decay_delta', 'hybrid_decay_decay']
+    model_list = [delta, decay, RT_delta, RT_decay, delta_RPUT, decay_RPUT, hybrid_delta_delta, hybrid_decay_delta, hybrid_decay_decay]
+
+    moving_window_model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT',
+                                 'hybrid_delta_delta', 'hybrid_decay_delta', 'hybrid_decay_decay']
+    moving_window_model_list = [delta, decay, RT_delta, RT_decay, delta_RPUT, decay_RPUT, hybrid_delta_delta,
+                                hybrid_decay_delta, hybrid_decay_decay]
 
     lesas1_folders = [lesas1_full_folder, lesas1_3block_folder]
     ledis1_folders = [ledis1_full_folder, ledis1_3block_folder]
+
+    n_iterations = 100
 
     # ==================================================================================================================
     # LeSaS1 Model Fitting (4 blocks; 3 blocks; 4th block only)
     # ==================================================================================================================
     # Whole-task model fitting
-    n_iterations = 100
-
     for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict]):
         for j, model in enumerate(model_list):
                 save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
@@ -125,28 +128,28 @@ if __name__ == "__main__":
 
                 model_results.to_csv(save_dir, index=False)
 
-    # # ------------------------------------------------------------------------------------------------------------------
-    # # Fit the models with sliding window
-    # # ------------------------------------------------------------------------------------------------------------------
-    # window_size = 10
-    #
-    # for i, model in enumerate(moving_window_model_list):
-    #     save_dir = f'./LeSaS1/Model/Moving_Window/{moving_window_model_names[i]}_results.csv'
-    #     # Check if the file already exists
-    #     try:
-    #         existing_results = pd.read_csv(save_dir)
-    #         if not existing_results.empty:
-    #             print(f"File {save_dir} already exists. Skipping model fitting.")
-    #             continue
-    #     except FileNotFoundError:
-    #         pass
-    #
-    #     # Fit the model to the data with a sliding window
-    #     model_results = moving_window_model_fitting(lesas1_data_raw, model, task='VS', id_col='SubNo',
-    #                                                 num_iterations=n_iterations, window_size=window_size,
-    #                                                 filter_fn=exclusionary_criteria, restart_EV=True,
-    #                                                 initial_EV=[0.5, 0.5], initial_mode='fixed')
-    #     model_results.to_csv(save_dir, index=False)
+    # ------------------------------------------------------------------------------------------------------------------
+    # Fit the models with sliding window
+    # ------------------------------------------------------------------------------------------------------------------
+    window_size = 10
+
+    for i, model in enumerate(moving_window_model_list):
+        save_dir = f'./LeSaS1/Model/Moving_Window/{moving_window_model_names[i]}_results.csv'
+        # Check if the file already exists
+        try:
+            existing_results = pd.read_csv(save_dir)
+            if not existing_results.empty:
+                print(f"File {save_dir} already exists. Skipping model fitting.")
+                continue
+        except FileNotFoundError:
+            pass
+
+        # Fit the model to the data with a sliding window
+        model_results = moving_window_model_fitting(lesas1_data_raw, model, task='VS', id_col='SubNo',
+                                                    num_iterations=n_iterations, window_size=window_size,
+                                                    filter_fn=exclusionary_criteria, restart_EV=True,
+                                                    initial_EV=[0.5, 0.5], initial_mode='fixed')
+        model_results.to_csv(save_dir, index=False)
 
     # # ==================================================================================================================
     # # LeDiS1 Model Fitting (4 blocks; 3 blocks; 4th block only)

@@ -2,7 +2,7 @@ function LEDIS1analysis
 
 %% DATA ANALYSIS SCRIPT FOR BOSTRA1 TASK
 
-% Adapted by M McKinney SU25 from J Irons AdaptChoiceAnalysis script
+% Adapted by M McKinney SP23 from J Irons AdaptChoiceAnalysis script
 
 % 1. Ensure this file is in the same folder as the individual data files
 
@@ -12,11 +12,11 @@ function LEDIS1analysis
 
 % 4. These text files will be created:
 
-%       a. Data_LEDIS1_allSubs_Summary:
+%       a. Data_BOSTRA1_allSubs_Summary:
 %           
 
 %% SETUP
-sublist = [1:8,10:14,16:17,19:30,32:37,39:61,64:66]; %subject numbers/'names'
+sublist = [1:100]; %subject numbers/'names'
 N = numel(sublist)
 % sub data file column conditions
 subNocond = 1; % subject number
@@ -47,6 +47,10 @@ for s = 1:length(sublist)
 
     % set up dataframes by group
     dfname = char(strcat('Data_',expname,'_',num2str(subNo),'.txt'));
+    if ~isfile(dfname)
+        warning('Missing file: %s', dfname);
+        continue
+    end
     df = dlmread(dfname,'',2,0);
 %% EXCLUSION CRITERIA
     % exclude practice trials
@@ -87,6 +91,7 @@ for s = 1:length(sublist)
     totalPoints(s,1) = df(end,points);
     
 end % subNo
+cd summaryStats/
 % Export to summary files 
 format long g
 % summary file (critical analyses)
@@ -97,7 +102,5 @@ save(strcat('N',num2str(N),'Data_',expname,'_',date,'Summary.mat'),'printoutmean
 header = {'Sub','group','acc','RT','RTopt', 'RTsubopt','propOpt','Switches','totalPoints','Nblocks'};
 txt=sprintf('%s\t',header{:});
 txt(end)='';
-cd summaryStats/
 dlmwrite(outputfile1,txt,'');
 dlmwrite(outputfile1,printoutmeans, '-append','delimiter','\t','precision',6);
-cd ../

@@ -86,7 +86,7 @@ if __name__ == "__main__":
     lesas1_out_dir = './LeSaS1/Data/'
 
     ledis1_file_path = './LeDiS1/Data/'
-    ledis1_exclude_list = [3, 33, 49]
+    ledis1_exclude_list = []
     ledis1_out_dir = './LeDiS1/Data/'
 
     # Preprocess LeSaS1 data
@@ -95,8 +95,6 @@ if __name__ == "__main__":
     # Preprocess LeDiS1 data
     ledis1_raw, ledis1_cleaned = preprocess_data(ledis1_file_path, ledis1_exclude_list, ledis1_out_dir)
 
-    # read a txt
-    summary = pd.read_csv('./LeDiS1/Data/summaryStats/N59Data_LEDIS1_03-Jun-2025_Summary.txt', sep='\t').dropna()
 
 
 

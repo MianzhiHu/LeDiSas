@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from behavioral_analysis import lesas1_optimal_window_df
 from model_fitting import lesas1_3block_dict
-from utils.ComputationalModeling import parameter_extractor
+from utils.ComputationalModeling import parameter_extractor, bayes_factor
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
@@ -33,10 +33,8 @@ ledis1_data_subset.to_csv('./LeDiS1/Data/group_assignment.csv', index=False)
 # load all model files
 lesas1_model_path = './LeSaS1/Model/'
 lesas1_model_3blocks_path = './LeSaS1/Model/3block/'
-lesas1_model_4blocks_path = './LeSaS1/Model/4thblock/'
 ledis1_model_path = './LeDiS1/Model/'
 ledis1_model_3blocks_path = './LeDiS1/Model/3block/'
-ledis1_model_4blocks_path = './LeDiS1/Model/4thblock/'
 
 
 # Function load model results
@@ -64,10 +62,8 @@ def load_model_results(model_path, group_assignment):
 # Load model results for LeSaS1
 lesas1_model_results = load_model_results(lesas1_model_path, lesas1_data_subset)
 lesas1_3blocks_model_results = load_model_results(lesas1_model_3blocks_path, lesas1_data_subset)
-lesas1_4blocks_model_results = load_model_results(lesas1_model_4blocks_path, lesas1_data_subset)
 ledis1_model_results = load_model_results(ledis1_model_path, ledis1_data_subset)
 ledis1_3blocks_model_results = load_model_results(ledis1_model_3blocks_path, ledis1_data_subset)
-ledis1_4blocks_model_results = load_model_results(ledis1_model_4blocks_path, ledis1_data_subset)
 
 # Calculate % of optimal choices
 lesas1_subj_means = lesas1_data_clean.groupby(['SubNo', 'Group(1=OptHighReward;2=OptLowReward)'])['Optimal_Choice'].mean().reset_index()
@@ -79,7 +75,6 @@ lesas1_subj_means.columns = ['participant_id', 'Group', 'Optimal_Choice']
 # Create model summary tables for all models
 create_model_summary_table(lesas1_model_results, './LeSaS1/full_model_summary.docx')
 create_model_summary_table(lesas1_3blocks_model_results, './LeSaS1/3blocks_model_summary.docx')
-create_model_summary_table(lesas1_4blocks_model_results, './LeSaS1/4blocks_model_summary.docx')
 
 # Create model summary tables for RT models
 rt_models = ['RT_decay_PVL', 'RT_decay', 'RT_delta_PVL', 'RT_delta', 'RT_exp_basic', 'RT_exp_decay', 'RT_exp_delta']
@@ -104,8 +99,6 @@ create_model_summary_table({model: lesas1_model_results[model] for model in sele
                             './LeSaS1/selected_model_summary.docx')
 create_model_summary_table({model: lesas1_3blocks_model_results[model] for model in selected_models},
                             './LeSaS1/3blocks_selected_model_summary.docx')
-create_model_summary_table({model: lesas1_4blocks_model_results[model] for model in selected_models},
-                            './LeSaS1/4blocks_selected_model_summary.docx')
 # create_model_summary_table({model: ledis1_model_results[model] for model in selected_models},
 #                            './LeDiS1/selected_model_summary.docx')
 # create_model_summary_table({model: ledis1_3blocks_model_results[model] for model in selected_models},
@@ -124,14 +117,40 @@ lesas1_RPUT_based_participants.to_csv('./LeSaS1/Data/RPUT_based_participants.csv
 print('=' * 50)
 print('Model summary tables created successfully.')
 
+# Calculate bayes factor
+refer_model = 'decay'
+optimalhighreward_refer = lesas1_model_results[refer_model][lesas1_model_results[refer_model]['Group'] == 1]
+optimallowreward_refer = lesas1_model_results[refer_model][lesas1_model_results[refer_model]['Group'] == 2]
+
+for key, model in lesas1_model_results.items():
+    if key in selected_models:
+        optimalhighreward = model[model['Group'] == 1]
+        optimallowreward = model[model['Group'] == 2]
+        print(f'[{key}]')
+        bf = bayes_factor(optimalhighreward, optimalhighreward_refer)
+        print(f'Bayes Factor between decay and {key} for High-Reward-Optimal group: {bf:.2f}')
+        bf = bayes_factor(optimallowreward, optimallowreward_refer)
+        print(f'Bayes Factor between decay and {key} for Low-Reward-Optimal group: {bf:.2f}')
+
+
+optimalhighreward_refer = lesas1_3blocks_model_results[refer_model][lesas1_3blocks_model_results[refer_model]['Group'] == 1]
+optimallowreward_refer = lesas1_3blocks_model_results[refer_model][lesas1_3blocks_model_results[refer_model]['Group'] == 2]
+for key, model in lesas1_3blocks_model_results.items():
+    if key in selected_models:
+        optimalhighreward = model[model['Group'] == 1]
+        optimallowreward = model[model['Group'] == 2]
+        print(f'[{key}]')
+        bf = bayes_factor(optimalhighreward, optimalhighreward_refer)
+        print(f'Bayes Factor between decay and {key} for High-Reward-Optimal group: {bf:.2f}')
+        bf = bayes_factor(optimallowreward, optimallowreward_refer)
+        print(f'Bayes Factor between decay and {key} for Low-Reward-Optimal group: {bf:.2f}')
 # ======================================================================================================================
 # Data Analysis
 # ======================================================================================================================
 # Correlation between optimal choice and parameters
-hybrid_delta_delta = lesas1_model_results['hybrid_delta_delta']
+hybrid_delta_delta = lesas1_model_results['hybrid_decay_decay']
 hybrid_delta_delta = pd.merge(hybrid_delta_delta, lesas1_subj_means, on=['participant_id', 'Group'], how='left')
-hybrid_delta_delta = parameter_extractor(hybrid_delta_delta, ['t', 'alpha', 'RT0Sub', 'RT0Opt', 'Weight'])
-hybrid_delta_delta['RT0Diff'] = hybrid_delta_delta['RT0Opt'] - hybrid_delta_delta['RT0Sub']
+hybrid_delta_delta = parameter_extractor(hybrid_delta_delta, ['t', 'alpha', 'RTinitial', 'Weight'])
 print(f'Weight mean for group 1: {hybrid_delta_delta[hybrid_delta_delta["Group"] == 1]["Weight"].mean():.2f}')
 print(f'Weight mean for group 2: {hybrid_delta_delta[hybrid_delta_delta["Group"] == 2]["Weight"].mean():.2f}')
 t_weight = stats.ttest_ind(
@@ -141,13 +160,17 @@ t_weight = stats.ttest_ind(
 print(f'Between Groups - T-test for Weight: t-statistic = {t_weight.statistic:.3f}, p-value = {t_weight.pvalue:.3f}')
 
 hybrid_delta_delta.to_csv('./LeSaS1/Data/hybrid_delta_delta.csv', index=False)
-corr = pg.pairwise_corr(hybrid_delta_delta, columns=['Optimal_Choice', 't', 'alpha', 'RT0Sub', 'RT0Opt', 'Weight', 'RT0Diff'], method='pearson')
+corr = pg.pairwise_corr(hybrid_delta_delta, columns=['Optimal_Choice', 't', 'alpha', 'RTinitial', 'Weight', 'RT0Diff'], method='pearson')
 
 hybrid_delta_delta_1 = hybrid_delta_delta[hybrid_delta_delta['Group'] == 1]
 hybrid_delta_delta_2 = hybrid_delta_delta[hybrid_delta_delta['Group'] == 2]
-corr_1 = pg.pairwise_corr(hybrid_delta_delta_1, columns=['Optimal_Choice', 't', 'alpha', 'RT0Sub', 'RT0Opt', 'Weight', 'RT0Diff'], method='pearson')
-corr_2 = pg.pairwise_corr(hybrid_delta_delta_2, columns=['Optimal_Choice', 't', 'alpha', 'RT0Sub', 'RT0Opt', 'Weight', 'RT0Diff'], method='pearson')
+corr_1 = pg.pairwise_corr(hybrid_delta_delta_1, columns=['Optimal_Choice', 't', 'alpha', 'RT', 'Weight', 'RT0Diff'], method='pearson')
+corr_2 = pg.pairwise_corr(hybrid_delta_delta_2, columns=['Optimal_Choice', 't', 'alpha', 'RTinitial', 'Weight', 'RT0Diff'], method='pearson')
 
+# ======================================================================================================================
+# Group-based Analysis
+# ======================================================================================================================
+#
 # ======================================================================================================================
 # Moving Window Analysis
 # ======================================================================================================================
@@ -155,11 +178,12 @@ corr_2 = pg.pairwise_corr(hybrid_delta_delta_2, columns=['Optimal_Choice', 't', 
 parameter_map = {
     'delta': ['t', 'alpha'],
     'decay': ['t', 'alpha'],
-    'WSLS': ['t', 'alpha'],
-    'RT_delta': ['t', 'alpha', 'RT0Sub', 'RT0Opt'],
-    'hybrid_delta_delta': ['t', 'alpha', 'RT0Sub', 'RT0Opt', 'Weight'],
-    'hybrid_decay_delta': ['t', 'alpha', 'RT0Sub', 'RT0Opt', 'Weight'],
-    'hybrid_WSLS_delta': ['t', 'alpha', 'p_ws', 'P_ls', 'RT0Sub', 'RT0Opt', 'Weight'],
+    'RT_delta': ['t', 'alpha', 'RT_initial'],
+    'RT_decay': ['t', 'alpha', 'RT_initial'],
+    'delta_RPUT': ['t', 'alpha'],
+    'decay_RPUT': ['t', 'alpha'],
+    'hybrid_delta_delta': ['t', 'alpha', 'RT_initial', 'weight'],
+    'hybrid_decay_decay': ['t', 'alpha', 'RT_initial', 'weight'],
 }
 
 model_mv_path = './LeSaS1/Model/Moving_Window/'
@@ -191,17 +215,22 @@ for model_name in model_mv_results:
 print(model_mv_results_df['Model'].value_counts())
 
 # Visualize hybrid delta delta
-hybrid = model_mv_results['hybrid_delta_delta']
-hybrid.to_csv('./LeSaS1/Data/hybrid_decay_delta.csv', index=False)
+hybrid = model_mv_results['hybrid_decay_decay']
+hybrid.to_csv('./LeSaS1/Data/hybrid_decay_decay.csv', index=False)
 hybrid['Group'] = hybrid['Group'].replace({1: 'High-Reward-Optimal', 2: 'Low-Reward-Optimal'})
-hybrid['RT_Weight'] = 1 - hybrid['Weight']
+hybrid['RT_Weight'] = 1 - hybrid['weight']
 
 # Create the plot
-side_by_side_plot(hybrid, 'window_id', 'Weight', 'Window Step', 'Weight Value',
+# separate by group
+hybrid_value = hybrid[hybrid['participant_id'].isin(lesas1_value_based_participants)]
+hybrid_RT = hybrid[hybrid['participant_id'].isin(lesas1_RT_based_participants)]
+hybrid_RPUT = hybrid[hybrid['participant_id'].isin(lesas1_RPUT_based_participants)]
+side_by_side_plot(hybrid_RT, 'window_id', 'weight', 'Window Step', 'Weight Value',
                   'Weight Values by Window Step Grouped by Participants', block_div=False)
 
 # Visualize model fit by time
-model_mv_results_selected = model_mv_results_df[model_mv_results_df['Model'].isin(['delta', 'decay', 'RT_delta'])]
+model_mv_results_selected = model_mv_results_df[model_mv_results_df['Model'].isin(['delta', 'decay', 'RT_delta', 'RT_decay',
+                                                                                    'delta_RPUT', 'decay_RPUT'])]
 model_mv_results_selected['Group'] = model_mv_results_selected['Group'].replace({1: 'High-Reward-Optimal', 2: 'Low-Reward-Optimal'}).copy()
 
 for group in ['High-Reward-Optimal', 'Low-Reward-Optimal']:
