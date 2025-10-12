@@ -67,7 +67,7 @@ modeled_data <- modeled_data %>%
 mixed_effect <- lmer(Optimal_Choice ~  Block + model_type + (1|SubNo),
                      data = modeled_data)
 
-mixed_effect <- lmer(Optimal_Choice ~  Block + Group * model_type + (1|SubNo),
+mixed_effect <- lmer(OutcomeValue ~  Block + Group * model_type + (1|SubNo),
                      data = modeled_data)
 
 mixed_effect <- lmer(RT ~  Block + Group * model_type + (1|SubNo),

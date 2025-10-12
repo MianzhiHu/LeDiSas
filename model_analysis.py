@@ -144,6 +144,7 @@ for key, model in lesas1_3blocks_model_results.items():
         print(f'Bayes Factor between decay and {key} for High-Reward-Optimal group: {bf:.2f}')
         bf = bayes_factor(optimallowreward, optimallowreward_refer)
         print(f'Bayes Factor between decay and {key} for Low-Reward-Optimal group: {bf:.2f}')
+
 # ======================================================================================================================
 # Data Analysis
 # ======================================================================================================================

@@ -33,6 +33,8 @@ def preprocess_data(file_path, exclude_list, out_dir):
             i += 1
             # Read the txt file into a DataFrame
             df = pd.read_csv(full_path, sep='\t', skiprows=1)
+            # Keep the original subject number for reference
+            df['Original_SubNo'] = subject_number
             # Reindex subject number
             df['SubNo'] = i
             dataframes.append(df)

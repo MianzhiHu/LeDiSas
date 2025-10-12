@@ -60,7 +60,7 @@ model_assignments = pd.DataFrame({
 })
 
 # Calculate total points per participant
-points_by_participant = lesas1_data_clean.groupby('SubNo')['OutcomeValue'].mean().reset_index()
+points_by_participant = lesas1_data_clean.groupby(['SubNo', 'Original_SubNo'])['OutcomeValue'].mean().reset_index()
 cum_points_by_participant = lesas1_data_clean.groupby('SubNo')['OutcomeValue'].sum().reset_index()
 cum_points_by_participant = cum_points_by_participant.rename(columns={'OutcomeValue': 'Cumulative_OutcomeValue'})
 optimal_choice_by_participant = lesas1_data_clean.groupby('SubNo')['Optimal_Choice'].mean().reset_index()
@@ -71,6 +71,8 @@ summary = functools.reduce(lambda left, right: pd.merge(left, right, on='SubNo')
                             rt_by_participant, model_assignments])
 summary = pd.merge(summary, lesas1_group_assignment[['participant_id', 'Group']], left_on='SubNo',
                    right_on='participant_id')
+# Drop redundant participant_id column
+summary = summary.drop(columns=['participant_id'])
 summary.to_csv('./LeSaS1/Data/summary.csv', index=False)
 lesas1_data_clean = pd.merge(lesas1_data_clean, model_assignments, on='SubNo', how='left')
 lesas1_data_clean.to_csv('./LeSaS1/Data/data_clean_model.csv', index=False)
