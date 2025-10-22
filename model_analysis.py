@@ -121,6 +121,10 @@ print(f'Number of participants with BIC difference > 3: {(summary_bic["BIC_Diff"
 summary_bic['Bayes_Factor'] = np.exp((summary_bic['Second_Best_BIC'] - summary_bic['Best_BIC']) / 2)
 print(summary_bic['Bayes_Factor'].describe())
 print(f'Number of participants with Bayes Factor > 3: {(summary_bic["Bayes_Factor"] > 3).sum()}')
+# how many participants per group with Bayes Factor difference > 3
+grouped = summary_bic[summary_bic['Bayes_Factor'] > 3].groupby('Best_Model').size()
+print('Number of participants with Bayes Factor > 3 per group:')
+print(grouped)
 
 def BIC_weights(bic_values):
     """Calculate BIC weights from BIC values."""
