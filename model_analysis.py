@@ -106,6 +106,41 @@ create_model_summary_table({model: lesas1_3blocks_model_results[model] for model
 
 _, best = create_model_summary_df({model: lesas1_model_results[model] for model in selected_models}, return_best=True)
 
+all_bics = pd.concat((df[['participant_id', 'Group', 'BIC']].assign(Model=name)
+                      for name, df in {model: lesas1_model_results[model] for model in selected_models}.items()), ignore_index=True)
+summary_bic = all_bics.pivot_table(index=['participant_id', 'Group'], columns='Model', values='BIC').reset_index()
+# compare the best and the second best model
+summary_bic['Best_Model'] = summary_bic[selected_models].idxmin(axis=1)
+summary_bic['Best_BIC'] = summary_bic[selected_models].min(axis=1)
+summary_bic['Second_Best_Model'] = summary_bic[selected_models].apply(lambda row: row[row != row.min()].idxmin(), axis=1)
+summary_bic['Second_Best_BIC'] = summary_bic[selected_models].apply(lambda row: row[row != row.min()].min(), axis=1)
+# calculate the difference between the best and the second best model
+summary_bic['BIC_Diff'] = summary_bic['Second_Best_BIC'] - summary_bic['Best_BIC']
+print(summary_bic['BIC_Diff'].describe())
+print(f'Number of participants with BIC difference > 3: {(summary_bic["BIC_Diff"] > 1).sum()}')
+summary_bic['Bayes_Factor'] = np.exp((summary_bic['Second_Best_BIC'] - summary_bic['Best_BIC']) / 2)
+print(summary_bic['Bayes_Factor'].describe())
+print(f'Number of participants with Bayes Factor > 3: {(summary_bic["Bayes_Factor"] > 3).sum()}')
+
+def BIC_weights(bic_values):
+    """Calculate BIC weights from BIC values."""
+    min_bic = np.min(bic_values)
+    delta_bic = bic_values - min_bic
+    weights = np.exp(-0.5 * delta_bic)
+    return weights / np.sum(weights)
+
+bic_weights = summary_bic[selected_models].apply(BIC_weights, axis=1)
+bic_weights['participant_id'] = summary_bic['participant_id']
+bic_weights = bic_weights[['participant_id'] + selected_models]
+bic_weights['max_weight_model'] = bic_weights[selected_models].idxmax(axis=1)
+bic_weights['max_weight'] = bic_weights[selected_models].max(axis=1)
+
+# check if the max weight model is the same as the best model
+bic_weights = pd.merge(bic_weights, summary_bic[['participant_id', 'Best_Model']], on='participant_id', how='left')
+bic_weights['model_match'] = bic_weights['max_weight_model'] == bic_weights['Best_Model']
+print(f'Number of participants with matching best model and max weight model: {bic_weights["model_match"].sum()} out of {len(bic_weights)}')
+bic_weights.to_csv('./LeSaS1/bic_weights.csv', index=False)
+
 # save the value-based participants
 lesas1_value_based_participants = best[best['Model'].isin(['delta', 'decay'])]['participant_id']
 lesas1_RT_based_participants = best[best['Model'].isin(['RT_delta', 'RT_decay'])]['participant_id']
@@ -248,14 +283,14 @@ for group in ['High-Reward-Optimal', 'Low-Reward-Optimal']:
     plt.savefig(f'./figures/BIC_moving_window_group_{group}.png', dpi=600, bbox_inches='tight')
     plt.close()
 
-# Mixed effects model
-model = smf.mixedlm("Weight ~ Group * window_id", hybrid, groups=hybrid["participant_id"]).fit()
-print(model.summary())
+# # Mixed effects model
+# model = smf.mixedlm("Weight ~ Group * window_id", hybrid, groups=hybrid["participant_id"]).fit()
+# print(model.summary())
 
-# quadratic model
-model_quadratic = smf.mixedlm("Weight ~ Group * I(window_id ** 2)", hybrid,
-                                groups=hybrid["participant_id"]).fit()
-print(model_quadratic.summary())
+# # quadratic model
+# model_quadratic = smf.mixedlm("Weight ~ Group * I(window_id ** 2)", hybrid,
+#                                 groups=hybrid["participant_id"]).fit()
+# print(model_quadratic.summary())
 
 # plot the quadratic model
 g = sns.lmplot(
