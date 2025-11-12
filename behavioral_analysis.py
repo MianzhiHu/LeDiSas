@@ -122,17 +122,17 @@ window_size = 10
 lesas1_optimal_window_df = behavioral_moving_window(lesas1_data_raw, variable='Optimal_Choice', window_size=window_size, exclusionary_criteria=exclusionary_criteria)
 lesas1_rt_window_df = behavioral_moving_window(lesas1_data_raw, variable='RT', window_size=window_size, exclusionary_criteria=exclusionary_criteria)
 
-# # Create a plot for optimal choice percentages
-# plt.figure(figsize=(10, 6))
-# sns.lineplot(data=lesas1_optimal_window_df, x='window_id', y='optimal_percentage', hue='Group')
-# plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block 1-2 Transition')
-# plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5, label='Block 2-3 Transition')
-# plt.axvline(x=243, color='gray', linestyle='--', alpha=0.5, label='Block 3-4 Transition')
-# plt.title('Optimal Choice Percentage by Window Steps')
-# plt.xlabel('Window Step')
-# plt.ylabel('Optimal Choice Percentage')
-# plt.savefig('./figures/optimal_choice_moving_window.png', dpi=600, bbox_inches='tight')
-#
+# Create a plot for optimal choice percentages
+plt.figure(figsize=(10, 6))
+sns.lineplot(data=lesas1_optimal_window_df, x='window_id', y='optimal_percentage', hue='Group')
+plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block 1-2 Transition')
+plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5, label='Block 2-3 Transition')
+plt.axvline(x=243, color='gray', linestyle='--', alpha=0.5, label='Block 3-4 Transition')
+plt.title('Optimal Choice Percentage by Window Steps')
+plt.xlabel('Window Step')
+plt.ylabel('Optimal Choice Percentage')
+plt.savefig('./figures/optimal_choice_moving_window.png', dpi=600, bbox_inches='tight')
+
 # # Create a plot for optimal choice percentages
 # plt.figure(figsize=(10, 6))
 # sns.lineplot(data=lesas1_rt_window_df, x='window_id', y='optimal_percentage', hue='Group')
@@ -236,16 +236,41 @@ if __name__ == "__main__":
     RPUT_based_rt_window = behavioral_moving_window(RPUT_based_participants, variable='RT',
                                                          window_size=window_size, exclusionary_criteria=exclusionary_criteria)
 
+    # # average optimal choice rate by model type
+    # RPUT_averaged = RPUT_based_participants.groupby('SubNo')['Optimal_Choice'].mean().reset_index()
+    #
+    # # pick out the RT_based participants with the lowest average optimal choice rate
+    # RPUT_worst_idx = RPUT_averaged.nsmallest(1, 'Optimal_Choice')
+    # RPUT_worst = RPUT_based_optimal_window[(RPUT_based_optimal_window['participant_id'].isin(RPUT_worst_idx['SubNo'])) & (RPUT_based_optimal_window['window_id'] <= 243)]
+    # RPUT_worst_rt = RPUT_based_participants[RPUT_based_participants['SubNo'].isin(RPUT_worst_idx['SubNo'])]
+    # RPUT_worst_rt = RPUT_worst_rt.iloc[:60]
+    #
+    # RPUT_best_idx = RPUT_averaged.nlargest(1, 'Optimal_Choice')
+    # RPUT_best = RPUT_based_optimal_window[(RPUT_based_optimal_window['participant_id'].isin(RPUT_best_idx['SubNo'])) & (RPUT_based_optimal_window['window_id'] <= 243)]
+    # RPUT_best_rt = RPUT_based_participants[RPUT_based_participants['SubNo'].isin(RPUT_best_idx['SubNo'])]
+    # RPUT_best_rt = RPUT_best_rt.iloc[:60]
+
     # Create a plot for optimal choice percentages by model fit
+    group = RT_based_optimal_window
+    group = group[group['window_id'] <= 243]
+    palette = ['#0E2841', '#AD849F']
+
+    # rename groups
+    group['Group'] = group['Group'].map({'High-Reward-Optimal': 'Reward-Optimal Group', 'Low-Reward-Optimal': 'Reward-Suboptimal Group'})
+
     plt.figure(figsize=(10, 6))
-    sns.lineplot(data=RT_based_optimal_window, x='window_id', y='optimal_percentage', hue='Group')
-    plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block 1-2 Transition')
-    plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5, label='Block 2-3 Transition')
-    plt.axvline(x=243, color='gray', linestyle='--', alpha=0.5, label='Block 3-4 Transition')
-    plt.ylim(0, 1)
-    plt.title('Optimal Choice Percentage by Window Steps')
-    plt.xlabel('Window Step')
-    plt.ylabel('Optimal Choice Percentage')
+    sns.lineplot(data=group, x='window_id', y='optimal_percentage', hue='Group', palette=palette)
+    plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block Transition')
+    plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5)
+    # plt.ylim(0, 1)
+    plt.title('Worst', fontsize=22)
+    plt.xlabel('Window Step', fontsize=18)
+    plt.ylabel('% Optimal Choice Percentage', fontsize=18)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    plt.legend(handles=handles, labels=labels, title='Group / Transition', loc='lower left')
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    sns.despine()
     plt.savefig('./figures/optimal_choice_moving_window_RT.png', dpi=600, bbox_inches='tight')
 
     plt.figure(figsize=(10, 6))
