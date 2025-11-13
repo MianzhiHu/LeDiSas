@@ -257,13 +257,14 @@ if __name__ == "__main__":
 
     # rename groups
     group['Group'] = group['Group'].map({'High-Reward-Optimal': 'Reward-Optimal Group', 'Low-Reward-Optimal': 'Reward-Suboptimal Group'})
+    group['Group'] = pd.Categorical(group['Group'])
 
     plt.figure(figsize=(10, 6))
     sns.lineplot(data=group, x='window_id', y='optimal_percentage', hue='Group', palette=palette)
     plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block Transition')
     plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5)
-    # plt.ylim(0, 1)
-    plt.title('Worst', fontsize=22)
+    plt.ylim(0, 1)
+    plt.title('RT-Based Model', fontsize=22)
     plt.xlabel('Window Step', fontsize=18)
     plt.ylabel('% Optimal Choice Percentage', fontsize=18)
     handles, labels = plt.gca().get_legend_handles_labels()
