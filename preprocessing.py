@@ -87,15 +87,15 @@ if __name__ == "__main__":
     lesas1_exclude_list = [6, 23, 64, 74, 90, 96, 97]
     lesas1_out_dir = './LeSaS1/Data/'
 
-    ledis1_file_path = './LeDiS1/Data/'
-    ledis1_exclude_list = []
-    ledis1_out_dir = './LeDiS1/Data/'
+    ledisas_file_path = './LeDiSaS/Data/'
+    ledisas_exclude_list = []
+    ledisas_out_dir = './LeDiSaS/Data/'
 
     # Preprocess LeSaS1 data
     lesas1_raw, lesas1_cleaned = preprocess_data(lesas1_file_path, lesas1_exclude_list, lesas1_out_dir)
 
     # Preprocess LeDiS1 data
-    ledis1_raw, ledis1_cleaned = preprocess_data(ledis1_file_path, ledis1_exclude_list, ledis1_out_dir)
+    ledis1_raw, ledis1_cleaned = preprocess_data(ledisas_file_path, ledisas_exclude_list, ledisas_out_dir)
 
 
 

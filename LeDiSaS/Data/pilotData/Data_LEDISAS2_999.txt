@@ -1,0 +1,21 @@
+LEDISAS2	Code = 999	
+SubNo	Group(1=OHRHV,SLRLV; 2=OHRLV,SLRHV; 3=OLRHV,SHRLV, 4 = OLRLV,SHRHV)	Block_trial	Block	VarDist_cond	Run_number	Targ1_position	Targ2_position	Red_targ_digit	Blue_targ_digit	Response	Targ_Choice	Acc	RewardOutcome(0=inaccurate;1=lowReward;2=highReward)	VarianceOutcome(0=inaccurate; 1=lowVariance; 2=highVariance)	OutcomeValue	Points	RT	Optimal_Choice	Repeat_Switch
+999	3	1	0	1	1	37	12	3	2	2	2	1	NaN	NaN	0	0	1321	1	NaN
+999	3	2	0	2	1	48	11	2	3	3	2	1	NaN	NaN	0	0	2984	0	1
+999	3	3	0	2	2	43	53	3	5	3	1	1	NaN	NaN	0	0	3406	1	2
+999	3	4	0	2	3	12	47	2	3	2	1	1	NaN	NaN	0	0	2547	1	1
+999	3	5	0	2	4	10	27	2	3	3	2	1	NaN	NaN	0	0	2668	0	2
+999	3	6	0	2	5	5	4	4	5	4	1	1	NaN	NaN	0	0	3078	1	2
+999	3	7	0	2	6	34	38	4	2	2	2	1	NaN	NaN	0	0	5200	0	2
+999	3	8	0	1	1	2	18	4	2	4	1	1	NaN	NaN	0	0	1957	0	2
+999	3	9	0	1	2	53	17	5	4	4	2	1	NaN	NaN	0	0	1013	1	2
+999	3	10	0	1	3	19	21	2	3	2	1	1	NaN	NaN	0	0	1235	0	2
+999	3	1	1	1	1	43	41	4	2	4	1	1	2	1	3.950000e+00	3.950000e+00	2749	0	NaN
+999	3	2	1	2	1	53	31	2	3	2	1	1	1	2	1.220000e+00	5.170000e+00	6229	1	1
+999	3	3	1	2	2	4	7	3	5	3	1	1	1	2	2.060000e+00	7.230000e+00	2153	1	1
+999	3	4	1	2	3	45	13	2	4	4	2	1	2	1	4.030000e+00	1.126000e+01	665	0	2
+999	3	5	1	2	4	12	42	4	3	4	1	1	1	2	1.460000e+00	1.272000e+01	995	1	2
+999	3	6	1	2	5	45	3	4	5	5	2	1	2	1	4.140000e+00	1.686000e+01	1193	0	2
+999	3	7	1	2	6	51	27	5	2	2	2	1	2	1	4.140000e+00	2.100000e+01	5175	0	1
+999	3	8	1	1	1	1	20	5	4	5	1	1	2	1	4	2.500000e+01	597	0	2
+999	3	9	1	1	2	18	26	4	5	5	2	1	1	2	2.150000e+00	2.715000e+01	1579	1	2

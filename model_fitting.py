@@ -9,21 +9,18 @@ from preprocessing import calculate_rt_stats
 # Read in the cleaned data
 lesas1_data_raw = pd.read_csv('./LeSaS1/Data/raw_data.csv')
 lesas1_data_clean = pd.read_csv('./LeSaS1/Data/cleaned_data.csv')
-ledis1_data_raw = pd.read_csv('./LeDiS1/Data/raw_data.csv')
-ledis1_data_clean = pd.read_csv('./LeDiS1/Data/cleaned_data.csv')
-
+ledisas_data_raw = pd.read_csv('./Ledisas/Data/raw_data.csv')
+ledisas_data_clean = pd.read_csv('./Ledisas/Data/cleaned_data.csv')
 
 lesas1_full_dict = dict_generator(lesas1_data_clean, task='VS')
 lesas1_3block_dict = dict_generator(lesas1_data_clean[lesas1_data_clean['Block'] <= 3], task='VS')
-lesas1_4th_block_dict = dict_generator(lesas1_data_clean[lesas1_data_clean['Block'] == 4], task='VS')
 
-ledis1_full_dict = dict_generator(ledis1_data_clean, task='VS')
-ledis1_3block_dict = dict_generator(ledis1_data_clean[ledis1_data_clean['Block'] <= 3], task='VS')
-ledis1_4th_block_dict = dict_generator(ledis1_data_clean[ledis1_data_clean['Block'] == 4], task='VS')
+ledisas_full_dict = dict_generator(ledisas_data_clean, task='VS')
+ledisas_3block_dict = dict_generator(ledisas_data_clean[ledisas_data_clean['Block'] <= 3], task='VS')
 
 # Calculate RT stats for exclusionary criteria
 lesas1_data_raw = calculate_rt_stats(lesas1_data_raw)
-ledis1_data_raw = calculate_rt_stats(ledis1_data_raw)
+ledisas_data_raw = calculate_rt_stats(ledisas_data_raw)
 
 
 # Define exclusionary criteria for sliding window model fitting (This is the same as the one used in preprocessing)
@@ -44,11 +41,9 @@ if __name__ == "__main__":
     # Define the directories for model fitting results
     lesas1_full_folder = './LeSaS1/Model/'
     lesas1_3block_folder = './LeSaS1/Model/3block/'
-    lesas1_4thblock_folder = './LeSaS1/Model/4thblock/'
 
-    ledis1_full_folder = './LeDiS1/Model/'
-    ledis1_3block_folder = './LeDiS1/Model/3block/'
-    ledis1_4thblock_folder = './LeDiS1/Model/4thblock/'
+    ledisas_full_folder = './Ledisas/Model/'
+    ledisas_3block_folder = './Ledisas/Model/3block/'
 
     # Define the models
     delta = VisualSearchModels('delta')
@@ -63,6 +58,7 @@ if __name__ == "__main__":
     WSLS_delta_weight = VisualSearchModels('WSLS_delta_weight')
     WSLS_decay_weight = VisualSearchModels('WSLS_decay_weight')
     dual_process = DualProcessModel(task='IGT_SGT')
+    dual_process_rt = DualProcessModel(task='IGT_SGT')
     RT_exp_basic = VisualSearchModels('RT_exp_basic')
     RT_delta = VisualSearchModels('RT_delta')
     RT_delta_PVL = VisualSearchModels('RT_delta_PVL')
@@ -85,8 +81,10 @@ if __name__ == "__main__":
     #               RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
     #               hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration, hybrid_WSLS_delta, dual_process]
 
-    model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT', 'hybrid_delta_delta', 'hybrid_decay_delta', 'hybrid_decay_decay']
-    model_list = [delta, decay, RT_delta, RT_decay, delta_RPUT, decay_RPUT, hybrid_delta_delta, hybrid_decay_delta, hybrid_decay_decay]
+    model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT', 'dual_process', 'dual_process_rt',
+                   'hybrid_delta_delta', 'hybrid_decay_delta', 'hybrid_decay_decay']
+    model_list = [delta, decay, RT_delta, RT_decay, delta_RPUT, decay_RPUT, dual_process, dual_process_rt,
+                  hybrid_delta_delta, hybrid_decay_delta, hybrid_decay_decay]
 
     moving_window_model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT',
                                  'hybrid_delta_delta', 'hybrid_decay_delta', 'hybrid_decay_decay']
@@ -94,70 +92,18 @@ if __name__ == "__main__":
                                 hybrid_decay_delta, hybrid_decay_decay]
 
     lesas1_folders = [lesas1_full_folder, lesas1_3block_folder]
-    ledis1_folders = [ledis1_full_folder, ledis1_3block_folder]
+    ledisas_folders = [ledisas_full_folder, ledisas_3block_folder]
 
     n_iterations = 100
-
-    # ==================================================================================================================
-    # LeSaS1 Model Fitting (4 blocks; 3 blocks; 4th block only)
-    # ==================================================================================================================
-    # Whole-task model fitting
-    for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict]):
-        for j, model in enumerate(model_list):
-                save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
-                # Check if the file already exists
-                try:
-                 existing_results = pd.read_csv(save_dir)
-                 if not existing_results.empty:
-                      print(f"File {save_dir} already exists. Skipping model fitting.")
-                      continue
-                except FileNotFoundError:
-                 pass
-
-                # If the model is dual-process, fit it with specific parameters
-                if model_names[j] == 'dual_process':
-                    model_results = dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
-                                     Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5],
-                                     initial_mode='fixed', num_iterations=n_iterations)
-
-                else:
-                    # Fit the model to the data
-                    model_results = model.fit(lesas1_dict, num_iterations=n_iterations, initial_mode='fixed',
-                                              initial_EV=[0.5, 0.5])
-
-                model_results.to_csv(save_dir, index=False)
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # Fit the models with sliding window
-    # ------------------------------------------------------------------------------------------------------------------
     window_size = 10
 
-    for i, model in enumerate(moving_window_model_list):
-        save_dir = f'./LeSaS1/Model/Moving_Window/{moving_window_model_names[i]}_results.csv'
-        # Check if the file already exists
-        try:
-            existing_results = pd.read_csv(save_dir)
-            if not existing_results.empty:
-                print(f"File {save_dir} already exists. Skipping model fitting.")
-                continue
-        except FileNotFoundError:
-            pass
-
-        # Fit the model to the data with a sliding window
-        model_results = moving_window_model_fitting(lesas1_data_raw, model, task='VS', id_col='SubNo',
-                                                    num_iterations=n_iterations, window_size=window_size,
-                                                    filter_fn=exclusionary_criteria, restart_EV=True,
-                                                    initial_EV=[0.5, 0.5], initial_mode='fixed')
-        model_results.to_csv(save_dir, index=False)
-
     # # ==================================================================================================================
-    # # LeDiS1 Model Fitting (4 blocks; 3 blocks; 4th block only)
+    # # LeSaS1 Model Fitting (4 blocks; 3 blocks)
     # # ==================================================================================================================
     # # Whole-task model fitting
-    # for i, ledis1_data in enumerate([ledis1_full_dict, ledis1_3block_dict]):
+    # for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict]):
     #     for j, model in enumerate(model_list):
-    #             save_dir = f'{ledis1_folders[i]}{model_names[j]}_results.csv'
+    #             save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
     #             # Check if the file already exists
     #             try:
     #              existing_results = pd.read_csv(save_dir)
@@ -169,21 +115,24 @@ if __name__ == "__main__":
     #
     #             # If the model is dual-process, fit it with specific parameters
     #             if model_names[j] == 'dual_process':
-    #                 model_results = dual_process.fit(ledis1_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+    #                 model_results = dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
     #                                  Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-    #                                  num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5], num_iterations=n_iterations)
+    #                                  num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5],
+    #                                  initial_mode='fixed', num_iterations=n_iterations)
     #
     #             else:
     #                 # Fit the model to the data
-    #                 model_results = model.fit(ledis1_data, num_iterations=n_iterations, initial_EV=[0.5, 0.5], initial_mode='fixed')
+    #                 model_results = model.fit(lesas1_dict, num_iterations=n_iterations, initial_mode='fixed',
+    #                                           initial_EV=[0.5, 0.5])
     #
     #             model_results.to_csv(save_dir, index=False)
     #
     # # ------------------------------------------------------------------------------------------------------------------
     # # Fit the models with sliding window
     # # ------------------------------------------------------------------------------------------------------------------
+    #
     # for i, model in enumerate(moving_window_model_list):
-    #     save_dir = f'./LeDiS1/Model/Moving_Window/{moving_window_model_names[i]}_results.csv'
+    #     save_dir = f'./LeSaS1/Model/Moving_Window/{moving_window_model_names[i]}_results.csv'
     #     # Check if the file already exists
     #     try:
     #         existing_results = pd.read_csv(save_dir)
@@ -194,11 +143,67 @@ if __name__ == "__main__":
     #         pass
     #
     #     # Fit the model to the data with a sliding window
-    #     model_results = moving_window_model_fitting(ledis1_data_raw, model, task='VS', id_col='SubNo',
+    #     model_results = moving_window_model_fitting(lesas1_data_raw, model, task='VS', id_col='SubNo',
     #                                                 num_iterations=n_iterations, window_size=window_size,
     #                                                 filter_fn=exclusionary_criteria, restart_EV=True,
-    #                                                 initial_mode='fixed', initial_EV=[0.5, 0.5])
+    #                                                 initial_EV=[0.5, 0.5], initial_mode='fixed')
     #     model_results.to_csv(save_dir, index=False)
+
+    # ==================================================================================================================
+    # Ledisas Model Fitting (4 blocks; 3 blocks)
+    # ==================================================================================================================
+    # Whole-task model fitting
+    for i, ledisas_data in enumerate([ledisas_full_dict, ledisas_3block_dict]):
+        for j, model in enumerate(model_list):
+                save_dir = f'{ledisas_folders[i]}{model_names[j]}_results.csv'
+                # Check if the file already exists
+                try:
+                 existing_results = pd.read_csv(save_dir)
+                 if not existing_results.empty:
+                      print(f"File {save_dir} already exists. Skipping model fitting.")
+                      continue
+                except FileNotFoundError:
+                 pass
+
+                # If the model is dual-process, fit it with specific parameters
+                if model_names[j] == 'dual_process':
+                    model_results = dual_process.fit(ledisas_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+                                     Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
+                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5], num_iterations=n_iterations)
+                elif model_names[j] == 'dual_process_rt':
+                    rt_data = ledisas_data[1].pop("reward", None)
+                    rt_data[1]["reward"] = rt_data[1].pop("react_time")
+                    model_results = dual_process_rt.fit(rt_data, 'Dual_Process_Visual', Gau_fun='Naive_Recency',
+                                     Dir_fun='Linear_Recency_VS', weight_Dir='softmax', weight_Gau='softmax',
+                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[3.57, 3.57],
+                                     initial_mode='fixed', num_iterations=n_iterations)
+
+                else:
+                    # Fit the model to the data
+                    model_results = model.fit(ledisas_data, num_iterations=n_iterations, initial_EV=[0.5, 0.5], initial_mode='fixed')
+
+                model_results.to_csv(save_dir, index=False)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Fit the models with sliding window
+    # ------------------------------------------------------------------------------------------------------------------
+    for i, model in enumerate(moving_window_model_list):
+        save_dir = f'./ledisas/Model/Moving_Window/{moving_window_model_names[i]}_results.csv'
+        # Check if the file already exists
+        try:
+            existing_results = pd.read_csv(save_dir)
+            if not existing_results.empty:
+                print(f"File {save_dir} already exists. Skipping model fitting.")
+                continue
+        except FileNotFoundError:
+            pass
+
+        # Fit the model to the data with a sliding window
+        model_results = moving_window_model_fitting(ledisas_data_raw, model, task='VS', id_col='SubNo',
+                                                    num_iterations=n_iterations, window_size=window_size,
+                                                    filter_fn=exclusionary_criteria, restart_EV=True,
+                                                    initial_mode='fixed', initial_EV=[0.5, 0.5])
+        model_results.to_csv(save_dir, index=False)
 
     # ==================================================================================================================
     # Block-wise model fitting (Unused)

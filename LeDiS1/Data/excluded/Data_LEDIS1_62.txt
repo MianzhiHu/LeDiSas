@@ -1,2 +1,0 @@
-LEDIS1	Code = 62	
-SubNo	Group(1=OptHighReward;2=OptLowReward)	Block_trial	Block	VarDist_cond	Run_number	Targ1_position	Targ2_position	Red_targ_digit	Blue_targ_digit	Response	Targ_Choice	Acc	OutcomeCond(0=inaccurate;1=lowReward;2=highReward)	OutcomeValue	Points	RT	Optimal_Choice	Repeat_Switch
