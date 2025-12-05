@@ -50,15 +50,22 @@ if __name__ == "__main__":
     delta_perseveration = VisualSearchModels('delta_perseveration')
     delta_PVL = VisualSearchModels('delta_PVL_relative')
     delta_RPUT = VisualSearchModels('delta_RPUT')
+    delta_RPUT_uncertainty = VisualSearchModels('delta_RPUT_unc')
+    delta_uncertainty = VisualSearchModels('delta_uncertainty')
     decay = VisualSearchModels('decay')
     decay_PVL = VisualSearchModels('decay_PVL_relative')
     decay_RPUT = VisualSearchModels('decay_RPUT')
+    decay_RPUT_uncertainty = VisualSearchModels('decay_RPUT_unc')
+    decay_uncertainty = VisualSearchModels('decay_uncertainty')
     WSLS = VisualSearchModels('WSLS')
     WSLS_delta = VisualSearchModels('WSLS_delta')
     WSLS_delta_weight = VisualSearchModels('WSLS_delta_weight')
     WSLS_decay_weight = VisualSearchModels('WSLS_decay_weight')
     dual_process = DualProcessModel(task='IGT_SGT')
     dual_process_rt = DualProcessModel(task='IGT_SGT')
+    mean_var = VisualSearchModels('mean_var_utility')
+    mean_var_decay = VisualSearchModels('mean_var_decay')
+    kalman = VisualSearchModels('kalman_filter')
     RT_exp_basic = VisualSearchModels('RT_exp_basic')
     RT_delta = VisualSearchModels('RT_delta')
     RT_delta_PVL = VisualSearchModels('RT_delta_PVL')
@@ -81,10 +88,13 @@ if __name__ == "__main__":
     #               RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
     #               hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration, hybrid_WSLS_delta, dual_process]
 
-    model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT', 'dual_process', 'dual_process_rt',
-                   'hybrid_delta_delta', 'hybrid_decay_delta', 'hybrid_decay_decay']
-    model_list = [delta, decay, RT_delta, RT_decay, delta_RPUT, decay_RPUT, dual_process, dual_process_rt,
-                  hybrid_delta_delta, hybrid_decay_delta, hybrid_decay_decay]
+    model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT', 'hybrid_delta_delta',
+                   'hybrid_decay_delta', 'hybrid_decay_decay', 'mean_var', 'mean_var_decay', 'kalman',
+                   'delta_RPUT_unc', 'decay_RPUT_unc']
+
+    model_list = [delta, decay, RT_delta, RT_decay, delta_RPUT, decay_RPUT, hybrid_delta_delta, hybrid_decay_delta,
+                  hybrid_decay_decay, mean_var, mean_var_decay, kalman, delta_uncertainty, decay_uncertainty,
+                  delta_RPUT_uncertainty, decay_RPUT_uncertainty]
 
     moving_window_model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT',
                                  'hybrid_delta_delta', 'hybrid_decay_delta', 'hybrid_decay_decay']
@@ -168,42 +178,44 @@ if __name__ == "__main__":
                 # If the model is dual-process, fit it with specific parameters
                 if model_names[j] == 'dual_process':
                     model_results = dual_process.fit(ledisas_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
-                                     Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5], num_iterations=n_iterations)
+                                                     Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
+                                                     num_training_trials=999, num_exp_restart=9999,
+                                                     initial_mode='first_trial_no_alpha',num_iterations=n_iterations)
                 elif model_names[j] == 'dual_process_rt':
-                    rt_data = ledisas_data[1].pop("reward", None)
+                    rt_data = ledisas_data.copy()
+                    rt_data[1].pop("reward", None)
                     rt_data[1]["reward"] = rt_data[1].pop("react_time")
                     model_results = dual_process_rt.fit(rt_data, 'Dual_Process_Visual', Gau_fun='Naive_Recency',
-                                     Dir_fun='Linear_Recency_VS', weight_Dir='softmax', weight_Gau='softmax',
-                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[3.57, 3.57],
-                                     initial_mode='fixed', num_iterations=n_iterations)
+                                                        Dir_fun='Linear_Recency_VS', weight_Dir='softmax', weight_Gau='softmax',
+                                                        num_training_trials=999, num_exp_restart=9999,
+                                                        initial_mode='first_trial_no_alpha', num_iterations=n_iterations)
 
                 else:
                     # Fit the model to the data
-                    model_results = model.fit(ledisas_data, num_iterations=n_iterations, initial_EV=[0.5, 0.5], initial_mode='fixed')
+                    model_results = model.fit(ledisas_data, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
 
                 model_results.to_csv(save_dir, index=False)
 
-    # ------------------------------------------------------------------------------------------------------------------
-    # Fit the models with sliding window
-    # ------------------------------------------------------------------------------------------------------------------
-    for i, model in enumerate(moving_window_model_list):
-        save_dir = f'./ledisas/Model/Moving_Window/{moving_window_model_names[i]}_results.csv'
-        # Check if the file already exists
-        try:
-            existing_results = pd.read_csv(save_dir)
-            if not existing_results.empty:
-                print(f"File {save_dir} already exists. Skipping model fitting.")
-                continue
-        except FileNotFoundError:
-            pass
-
-        # Fit the model to the data with a sliding window
-        model_results = moving_window_model_fitting(ledisas_data_raw, model, task='VS', id_col='SubNo',
-                                                    num_iterations=n_iterations, window_size=window_size,
-                                                    filter_fn=exclusionary_criteria, restart_EV=True,
-                                                    initial_mode='fixed', initial_EV=[0.5, 0.5])
-        model_results.to_csv(save_dir, index=False)
+    # # ------------------------------------------------------------------------------------------------------------------
+    # # Fit the models with sliding window
+    # # ------------------------------------------------------------------------------------------------------------------
+    # for i, model in enumerate(moving_window_model_list):
+    #     save_dir = f'./ledisas/Model/Moving_Window/{moving_window_model_names[i]}_results.csv'
+    #     # Check if the file already exists
+    #     try:
+    #         existing_results = pd.read_csv(save_dir)
+    #         if not existing_results.empty:
+    #             print(f"File {save_dir} already exists. Skipping model fitting.")
+    #             continue
+    #     except FileNotFoundError:
+    #         pass
+    #
+    #     # Fit the model to the data with a sliding window
+    #     model_results = moving_window_model_fitting(ledisas_data_raw, model, task='VS', id_col='SubNo',
+    #                                                 num_iterations=n_iterations, window_size=window_size,
+    #                                                 filter_fn=exclusionary_criteria, restart_EV=True,
+    #                                                 initial_mode='fixed', initial_EV=[0.5, 0.5])
+    #     model_results.to_csv(save_dir, index=False)
 
     # ==================================================================================================================
     # Block-wise model fitting (Unused)

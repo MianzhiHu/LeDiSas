@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from behavioral_analysis import lesas1_optimal_window_df
+# from behavioral_analysis import lesas1_optimal_window_df
 from model_fitting import lesas1_3block_dict
 from utils.ComputationalModeling import parameter_extractor, bayes_factor
 from sklearn.linear_model import LinearRegression
@@ -18,7 +18,7 @@ import statsmodels.formula.api as smf
 
 # Read in the cleaned data
 lesas1_data_clean = pd.read_csv('./LeSaS1/Data/cleaned_data.csv')
-ledis1_data_clean = pd.read_csv('./LeDiS1/Data/cleaned_data.csv')
+ledisas_data_clean = pd.read_csv('./LeDiSaS/Data/cleaned_data.csv')
 
 # Get the subset data with only subno and condition
 print(lesas1_data_clean.columns)
@@ -26,15 +26,15 @@ lesas1_data_subset = lesas1_data_clean[['SubNo', 'Group(1=OptHighReward;2=OptLow
 lesas1_data_subset.columns = ['participant_id', 'Group']
 lesas1_data_subset.to_csv('./LeSaS1/Data/group_assignment.csv', index=False)
 
-ledis1_data_subset = ledis1_data_clean[['SubNo', 'Group(1=OptHighReward;2=OptLowReward)']].drop_duplicates()
-ledis1_data_subset.columns = ['participant_id', 'Group']
-ledis1_data_subset.to_csv('./LeDiS1/Data/group_assignment.csv', index=False)
+ledisas_data_subset = ledisas_data_clean[['SubNo', 'Group(1=OHRHV,SLRLV; 2=OHRLV,SLRHV; 3=OLRHV,SHRLV, 4 = OLRLV,SHRHV)']].drop_duplicates()
+ledisas_data_subset.columns = ['participant_id', 'Group']
+ledisas_data_subset.to_csv('./ledisas/Data/group_assignment.csv', index=False)
 
 # load all model files
 lesas1_model_path = './LeSaS1/Model/'
 lesas1_model_3blocks_path = './LeSaS1/Model/3block/'
-ledis1_model_path = './LeDiS1/Model/'
-ledis1_model_3blocks_path = './LeDiS1/Model/3block/'
+ledisas_model_path = './LeDiSaS/Model/'
+ledisas_model_3blocks_path = './LeDiSaS/Model/3block/'
 
 
 # Function load model results
@@ -62,8 +62,8 @@ def load_model_results(model_path, group_assignment):
 # Load model results for LeSaS1
 lesas1_model_results = load_model_results(lesas1_model_path, lesas1_data_subset)
 lesas1_3blocks_model_results = load_model_results(lesas1_model_3blocks_path, lesas1_data_subset)
-ledis1_model_results = load_model_results(ledis1_model_path, ledis1_data_subset)
-ledis1_3blocks_model_results = load_model_results(ledis1_model_3blocks_path, ledis1_data_subset)
+ledisas_model_results = load_model_results(ledisas_model_path, ledisas_data_subset)
+ledisas_3blocks_model_results = load_model_results(ledisas_model_3blocks_path, ledisas_data_subset)
 
 # Calculate % of optimal choices
 lesas1_subj_means = lesas1_data_clean.groupby(['SubNo', 'Group(1=OptHighReward;2=OptLowReward)'])['Optimal_Choice'].mean().reset_index()
@@ -94,20 +94,23 @@ create_model_summary_table({model: lesas1_model_results[model] for model in hybr
                             './LeSaS1/hybrid_model_summary.docx')
 
 # Create model summary tables for selected models
-selected_models = ['delta', 'delta_RPUT', 'decay', 'decay_RPUT', 'RT_delta', 'RT_decay']
-create_model_summary_table({model: lesas1_model_results[model] for model in selected_models},
-                            './LeSaS1/selected_model_summary.docx')
-create_model_summary_table({model: lesas1_3blocks_model_results[model] for model in selected_models},
-                            './LeSaS1/3blocks_selected_model_summary.docx')
-# create_model_summary_table({model: ledis1_model_results[model] for model in selected_models},
-#                            './LeDiS1/selected_model_summary.docx')
-# create_model_summary_table({model: ledis1_3blocks_model_results[model] for model in selected_models},
-#                             './LeDiS1/3blocks_selected_model_summary.docx')
+selected_models = ['delta', 'decay', 'delta_RPUT', 'decay_RPUT', 'RT_delta', 'RT_decay',
+                   'mean_var', 'mean_var_decay', 'delta_RPUT_unc', 'decay_RPUT_unc']
+# create_model_summary_table({model: lesas1_model_results[model] for model in selected_models},
+#                             './LeSaS1/selected_model_summary.docx')
+# create_model_summary_table({model: lesas1_3blocks_model_results[model] for model in selected_models},
+#                             './LeSaS1/3blocks_selected_model_summary.docx')
+create_model_summary_table({model: ledisas_model_results[model] for model in selected_models},
+                           './ledisas/selected_model_summary.docx',
+                           group_names=['OHRHV,SLRLV', 'OHRLV,SLRHV', 'OLRHV,SHRLV', 'OLRLV,SHRHV'])
+create_model_summary_table({model: ledisas_3blocks_model_results[model] for model in selected_models},
+                            './ledisas/3blocks_selected_model_summary.docx',
+                           group_names=['OHRHV,SLRLV', 'OHRLV,SLRHV', 'OLRHV,SHRLV', 'OLRLV,SHRHV'])
 
 _, best = create_model_summary_df({model: lesas1_model_results[model] for model in selected_models}, return_best=True)
 
 all_bics = pd.concat((df[['participant_id', 'Group', 'BIC']].assign(Model=name)
-                      for name, df in {model: lesas1_model_results[model] for model in selected_models}.items()), ignore_index=True)
+                      for name, df in {model: ledisas_model_results[model] for model in selected_models}.items()), ignore_index=True)
 summary_bic = all_bics.pivot_table(index=['participant_id', 'Group'], columns='Model', values='BIC').reset_index()
 # compare the best and the second best model
 summary_bic['Best_Model'] = summary_bic[selected_models].idxmin(axis=1)
