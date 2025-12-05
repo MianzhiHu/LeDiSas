@@ -12,7 +12,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import pingouin as pg
 from scipy import stats
 from plotting_functions import *
-from utils.VisualSearchModels import create_model_summary_table, create_model_summary_df
+from utils.VisualSearchModels import create_model_summary_table, create_model_summary_df, VisualSearchModels
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
@@ -36,6 +36,9 @@ lesas1_model_3blocks_path = './LeSaS1/Model/3block/'
 ledisas_model_path = './LeDiSaS/Model/'
 ledisas_model_3blocks_path = './LeDiSaS/Model/3block/'
 
+dummy_model = VisualSearchModels('delta')
+param_map = dummy_model._PARAM_MAP
+param_names_by_model = {model: list(params.keys()) for model, params in param_map.items()}
 
 # Function load model results
 def load_model_results(model_path, group_assignment):
@@ -49,6 +52,7 @@ def load_model_results(model_path, group_assignment):
             model_name = file.split('.')[0].replace('_results', '')
             model_results[model_name] = pd.read_csv(model_path + file)
             model_results[model_name] = pd.merge(group_assignment, model_results[model_name], on='participant_id', how='left')
+            model_results[model_name] = parameter_extractor(model_results[model_name], param_names_by_model[model_name])
             print(f'[{model_name}]')
             print(f'BIC: {model_results[model_name]["BIC"].mean():.2f}; AIC: {model_results[model_name]["AIC"].mean():.2f}')
 
@@ -60,10 +64,10 @@ def load_model_results(model_path, group_assignment):
 
 
 # Load model results for LeSaS1
-lesas1_model_results = load_model_results(lesas1_model_path, lesas1_data_subset)
-lesas1_3blocks_model_results = load_model_results(lesas1_model_3blocks_path, lesas1_data_subset)
+# lesas1_model_results = load_model_results(lesas1_model_path, lesas1_data_subset)
+# lesas1_3blocks_model_results = load_model_results(lesas1_model_3blocks_path, lesas1_data_subset)
 ledisas_model_results = load_model_results(ledisas_model_path, ledisas_data_subset)
-ledisas_3blocks_model_results = load_model_results(ledisas_model_3blocks_path, ledisas_data_subset)
+# ledisas_3blocks_model_results = load_model_results(ledisas_model_3blocks_path, ledisas_data_subset)
 
 # Calculate % of optimal choices
 lesas1_subj_means = lesas1_data_clean.groupby(['SubNo', 'Group(1=OptHighReward;2=OptLowReward)'])['Optimal_Choice'].mean().reset_index()
@@ -95,7 +99,7 @@ create_model_summary_table({model: lesas1_model_results[model] for model in hybr
 
 # Create model summary tables for selected models
 selected_models = ['delta', 'decay', 'delta_RPUT', 'decay_RPUT', 'RT_delta', 'RT_decay',
-                   'mean_var', 'mean_var_decay', 'delta_RPUT_unc', 'decay_RPUT_unc']
+                   'mean_var_delta', 'mean_var_decay', 'delta_RPUT_unc', 'decay_RPUT_unc']
 # create_model_summary_table({model: lesas1_model_results[model] for model in selected_models},
 #                             './LeSaS1/selected_model_summary.docx')
 # create_model_summary_table({model: lesas1_3blocks_model_results[model] for model in selected_models},
@@ -125,7 +129,7 @@ summary_bic['Bayes_Factor'] = np.exp((summary_bic['Second_Best_BIC'] - summary_b
 print(summary_bic['Bayes_Factor'].describe())
 print(f'Number of participants with Bayes Factor > 3: {(summary_bic["Bayes_Factor"] > 3).sum()}')
 # how many participants per group with Bayes Factor difference > 3
-grouped = summary_bic[summary_bic['Bayes_Factor'] > 3].groupby('Best_Model').size()
+grouped = summary_bic[summary_bic['Bayes_Factor'] > 3].groupby(['Best_Model', 'Group']).size()
 print('Number of participants with Bayes Factor > 3 per group:')
 print(grouped)
 
@@ -211,9 +215,25 @@ corr_1 = pg.pairwise_corr(hybrid_delta_delta_1, columns=['Optimal_Choice', 't', 
 corr_2 = pg.pairwise_corr(hybrid_delta_delta_2, columns=['Optimal_Choice', 't', 'alpha', 'RTinitial', 'Weight', 'RT0Diff'], method='pearson')
 
 # ======================================================================================================================
-# Group-based Analysis
+# Parameter Analysis
 # ======================================================================================================================
-#
+print(ledisas_model_results['mean_var_decay']['lamda'].groupby(ledisas_model_results['mean_var_decay']['Group']).mean())
+print(ledisas_model_results['mean_var_delta']['lamda'].groupby(ledisas_model_results['mean_var_delta']['Group']).mean())
+print(ledisas_model_results['delta_RPUT_unc']['lamda'].groupby(ledisas_model_results['delta_RPUT_unc']['Group']).mean())
+print(ledisas_model_results['decay_RPUT_unc']['lamda'].groupby(ledisas_model_results['decay_RPUT_unc']['Group']).mean())
+
+# visualize lambda distribution
+for model_name in ['mean_var_decay', 'mean_var_delta', 'delta_RPUT_unc', 'decay_RPUT_unc']:
+    model_df = ledisas_model_results[model_name]
+    # one panel per group
+    g = sns.FacetGrid(model_df, col='Group', height=4, aspect=1)
+    g.map(sns.histplot, 'lamda', bins=20, kde=True)
+    g.set_axis_labels('Lambda', 'Count')
+    g.set_titles(col_template='Group {col_name}')
+    plt.suptitle(f'Lambda Distribution for {model_name} Model', y=1.05)
+    plt.savefig(f'./figures/{model_name}_lambda_distribution.png', dpi=600, bbox_inches='tight')
+    plt.close()
+
 # ======================================================================================================================
 # Moving Window Analysis
 # ======================================================================================================================

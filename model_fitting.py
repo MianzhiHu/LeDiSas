@@ -63,7 +63,7 @@ if __name__ == "__main__":
     WSLS_decay_weight = VisualSearchModels('WSLS_decay_weight')
     dual_process = DualProcessModel(task='IGT_SGT')
     dual_process_rt = DualProcessModel(task='IGT_SGT')
-    mean_var = VisualSearchModels('mean_var_utility')
+    mean_var_delta = VisualSearchModels('mean_var_delta')
     mean_var_decay = VisualSearchModels('mean_var_decay')
     kalman = VisualSearchModels('kalman_filter')
     RT_exp_basic = VisualSearchModels('RT_exp_basic')
@@ -89,11 +89,11 @@ if __name__ == "__main__":
     #               hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration, hybrid_WSLS_delta, dual_process]
 
     model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT', 'hybrid_delta_delta',
-                   'hybrid_decay_delta', 'hybrid_decay_decay', 'mean_var', 'mean_var_decay', 'kalman',
+                   'hybrid_decay_delta', 'hybrid_decay_decay', 'mean_var_delta', 'mean_var_decay', 'kalman_filter',
                    'delta_RPUT_unc', 'decay_RPUT_unc']
 
     model_list = [delta, decay, RT_delta, RT_decay, delta_RPUT, decay_RPUT, hybrid_delta_delta, hybrid_decay_delta,
-                  hybrid_decay_decay, mean_var, mean_var_decay, kalman, delta_uncertainty, decay_uncertainty,
+                  hybrid_decay_decay, mean_var_delta, mean_var_decay, kalman,
                   delta_RPUT_uncertainty, decay_RPUT_uncertainty]
 
     moving_window_model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT',
