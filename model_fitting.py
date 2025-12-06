@@ -57,14 +57,17 @@ if __name__ == "__main__":
     decay_RPUT = VisualSearchModels('decay_RPUT')
     decay_RPUT_uncertainty = VisualSearchModels('decay_RPUT_unc')
     decay_uncertainty = VisualSearchModels('decay_uncertainty')
+    perseveration = VisualSearchModels('perseveration')
     WSLS = VisualSearchModels('WSLS')
     WSLS_delta = VisualSearchModels('WSLS_delta')
     WSLS_delta_weight = VisualSearchModels('WSLS_delta_weight')
     WSLS_decay_weight = VisualSearchModels('WSLS_decay_weight')
     dual_process = DualProcessModel(task='IGT_SGT')
     dual_process_rt = DualProcessModel(task='IGT_SGT')
+    mean_var = VisualSearchModels('mean_var')
     mean_var_delta = VisualSearchModels('mean_var_delta')
     mean_var_decay = VisualSearchModels('mean_var_decay')
+    mean_var_unc = VisualSearchModels('mean_var_unc')
     kalman = VisualSearchModels('kalman_filter')
     RT_exp_basic = VisualSearchModels('RT_exp_basic')
     RT_delta = VisualSearchModels('RT_delta')
@@ -79,6 +82,8 @@ if __name__ == "__main__":
     hybrid_decay_decay = VisualSearchModels('hybrid_decay_decay')
     hybrid_decay_decay_3 = VisualSearchModels('hybrid_decay_decay_3')
 
+    dummy_model = VisualSearchModels('delta')
+
     # model_names = ['delta', 'delta_PVL', 'delta_RPUT', 'decay', 'decay_PVL', 'decay_RPUT', 'WSLS', 'WSLS_delta',
     #                'WSLS_delta_weight', 'WSLS_decay_weight', 'RT_exp_basic', 'RT_delta', 'RT_delta_PVL', 'RT_decay',
     #                'RT_decay_PVL', 'RT_exp_delta', 'RT_exp_decay', 'hybrid_delta_delta', 'hybrid_delta_delta_3',
@@ -88,13 +93,20 @@ if __name__ == "__main__":
     #               RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
     #               hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration, hybrid_WSLS_delta, dual_process]
 
-    model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT', 'hybrid_delta_delta',
-                   'hybrid_decay_delta', 'hybrid_decay_decay', 'mean_var_delta', 'mean_var_decay', 'kalman_filter',
-                   'delta_RPUT_unc', 'decay_RPUT_unc']
+    model_names = ['delta', 'decay', 'RT_delta', 'RT_decay',
+                   'delta_RPUT', 'decay_RPUT', 'delta_RPUT_unc', 'decay_RPUT_unc',
+                   'hybrid_delta_delta',
+                   'hybrid_decay_delta', 'hybrid_decay_decay',
+                   'mean_var', 'mean_var_delta', 'mean_var_unc', 'kalman_filter',
+                   'perseveration', 'random'
+                   ]
 
-    model_list = [delta, decay, RT_delta, RT_decay, delta_RPUT, decay_RPUT, hybrid_delta_delta, hybrid_decay_delta,
-                  hybrid_decay_decay, mean_var_delta, mean_var_decay, kalman,
-                  delta_RPUT_uncertainty, decay_RPUT_uncertainty]
+    model_list = [delta, decay, RT_delta, RT_decay,
+                  delta_RPUT, decay_RPUT, delta_RPUT_uncertainty, decay_RPUT_uncertainty,
+                  hybrid_delta_delta, hybrid_decay_delta, hybrid_decay_decay,
+                  mean_var, mean_var_delta, mean_var_unc, kalman,
+                  perseveration, dummy_model
+                  ]
 
     moving_window_model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT',
                                  'hybrid_delta_delta', 'hybrid_decay_delta', 'hybrid_decay_decay']
@@ -104,38 +116,55 @@ if __name__ == "__main__":
     lesas1_folders = [lesas1_full_folder, lesas1_3block_folder]
     ledisas_folders = [ledisas_full_folder, ledisas_3block_folder]
 
-    n_iterations = 100
+    n_iterations = 200
     window_size = 10
 
     # # ==================================================================================================================
     # # LeSaS1 Model Fitting (4 blocks; 3 blocks)
     # # ==================================================================================================================
-    # # Whole-task model fitting
-    # for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict]):
-    #     for j, model in enumerate(model_list):
-    #             save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
-    #             # Check if the file already exists
-    #             try:
-    #              existing_results = pd.read_csv(save_dir)
-    #              if not existing_results.empty:
-    #                   print(f"File {save_dir} already exists. Skipping model fitting.")
-    #                   continue
-    #             except FileNotFoundError:
-    #              pass
-    #
-    #             # If the model is dual-process, fit it with specific parameters
-    #             if model_names[j] == 'dual_process':
-    #                 model_results = dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
-    #                                  Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-    #                                  num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5],
-    #                                  initial_mode='fixed', num_iterations=n_iterations)
-    #
-    #             else:
-    #                 # Fit the model to the data
-    #                 model_results = model.fit(lesas1_dict, num_iterations=n_iterations, initial_mode='fixed',
-    #                                           initial_EV=[0.5, 0.5])
-    #
-    #             model_results.to_csv(save_dir, index=False)
+    # Whole-task model fitting
+    for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict]):
+        for j, model in enumerate(model_list):
+                save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
+                # Check if the file already exists
+                try:
+                 existing_results = pd.read_csv(save_dir)
+                 if not existing_results.empty:
+                      print(f"File {save_dir} already exists. Skipping model fitting.")
+                      continue
+                except FileNotFoundError:
+                 pass
+
+                # If the model is dual-process, fit it with specific parameters
+                if model_names[j] == 'dual_process':
+                    model_results = dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+                                     Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
+                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5],
+                                     initial_mode='fixed', num_iterations=n_iterations)
+                elif model_names[j] == 'random':
+                    # extract the number of trials for each subject
+                    results_list = []
+                    for subject_id, subject_data in lesas1_dict.items():
+                        n_trials = len(subject_data['choice'])
+                        # NLL
+                        nll = -np.log(0.5) * (n_trials - 1)  # Exclude first trial
+                        # AIC
+                        aic = 2 * 0 + 2 * nll  # 0 parameters
+                        # BIC
+                        bic = np.log(n_trials) * 0 + 2 * nll  # 0 parameters
+                        results_list.append({
+                            'participant_id': subject_id,
+                            'best_nll': nll,
+                            'AIC': aic,
+                            'BIC': bic
+                        })
+                    model_results = pd.DataFrame(results_list)
+
+                else:
+                    # Fit the model to the data
+                    model_results = model.fit(lesas1_dict, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
+
+                model_results.to_csv(save_dir, index=False)
     #
     # # ------------------------------------------------------------------------------------------------------------------
     # # Fit the models with sliding window
@@ -189,6 +218,25 @@ if __name__ == "__main__":
                                                         Dir_fun='Linear_Recency_VS', weight_Dir='softmax', weight_Gau='softmax',
                                                         num_training_trials=999, num_exp_restart=9999,
                                                         initial_mode='first_trial_no_alpha', num_iterations=n_iterations)
+
+                elif model_names[j] == 'random':
+                    # extract the number of trials for each subject
+                    results_list = []
+                    for subject_id, subject_data in ledisas_data.items():
+                        n_trials = len(subject_data['choice'])
+                        # NLL
+                        nll = -np.log(0.5) * (n_trials - 1)  # Exclude first trial
+                        # AIC
+                        aic = 2 * 0 + 2 * nll  # 0 parameters
+                        # BIC
+                        bic = np.log(n_trials) * 0 + 2 * nll  # 0 parameters
+                        results_list.append({
+                            'participant_id': subject_id,
+                            'best_nll': nll,
+                            'AIC': aic,
+                            'BIC': bic
+                        })
+                    model_results = pd.DataFrame(results_list)
 
                 else:
                     # Fit the model to the data

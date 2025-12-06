@@ -52,7 +52,8 @@ def load_model_results(model_path, group_assignment):
             model_name = file.split('.')[0].replace('_results', '')
             model_results[model_name] = pd.read_csv(model_path + file)
             model_results[model_name] = pd.merge(group_assignment, model_results[model_name], on='participant_id', how='left')
-            model_results[model_name] = parameter_extractor(model_results[model_name], param_names_by_model[model_name])
+            if model_name in param_names_by_model:
+                model_results[model_name] = parameter_extractor(model_results[model_name], param_names_by_model[model_name])
             print(f'[{model_name}]')
             print(f'BIC: {model_results[model_name]["BIC"].mean():.2f}; AIC: {model_results[model_name]["AIC"].mean():.2f}')
 
@@ -64,7 +65,7 @@ def load_model_results(model_path, group_assignment):
 
 
 # Load model results for LeSaS1
-# lesas1_model_results = load_model_results(lesas1_model_path, lesas1_data_subset)
+lesas1_model_results = load_model_results(lesas1_model_path, lesas1_data_subset)
 # lesas1_3blocks_model_results = load_model_results(lesas1_model_3blocks_path, lesas1_data_subset)
 ledisas_model_results = load_model_results(ledisas_model_path, ledisas_data_subset)
 # ledisas_3blocks_model_results = load_model_results(ledisas_model_3blocks_path, ledisas_data_subset)
@@ -86,10 +87,20 @@ create_model_summary_table({model: lesas1_model_results[model] for model in rt_m
                             './LeSaS1/RT_model_summary.docx')
 
 # Create model summary tables for reward-based models
-reward_models = ['decay_PVL', 'decay', 'decay_RPUT', 'delta_perseveration', 'delta_PVL', 'delta', 'delta_RPUT',
-                 'dual_process', 'WSLS_decay_weight', 'WSLS_delta', 'WSLS_delta_weight', 'WSLS']
+reward_models = ['delta', 'decay', 'mean_var', 'mean_var_delta', 'mean_var_unc', 'kalman_filter']
 create_model_summary_table({model: lesas1_model_results[model] for model in reward_models},
                             './LeSaS1/reward_model_summary.docx')
+create_model_summary_table({model: ledisas_model_results[model] for model in reward_models},
+                           './LeDiSaS/reward_model_summary.docx',
+                           group_names=['OHRHV,SLRLV', 'OHRLV,SLRHV', 'OLRHV,SHRLV', 'OLRLV,SHRHV'])
+
+# Create model summary tables for reward-based models
+RPUT_models = ['delta_RPUT', 'decay_RPUT', 'delta_RPUT_unc', 'decay_RPUT_unc']
+create_model_summary_table({model: lesas1_model_results[model] for model in RPUT_models},
+                            './LeSaS1/RPUT_model_summary.docx')
+create_model_summary_table({model: ledisas_model_results[model] for model in RPUT_models},
+                           './LeDiSaS/RPUT_model_summary.docx',
+                           group_names=['OHRHV,SLRLV', 'OHRLV,SLRHV', 'OLRHV,SHRLV', 'OLRLV,SHRHV'])
 
 # Create model summary tables for hybrid models
 hybrid_models = ['hybrid_decay_delta_3', 'hybrid_decay_delta', 'hybrid_delta_delta_3', 'hybrid_delta_delta',
@@ -98,10 +109,13 @@ create_model_summary_table({model: lesas1_model_results[model] for model in hybr
                             './LeSaS1/hybrid_model_summary.docx')
 
 # Create model summary tables for selected models
+selected_models = ['delta', 'decay', 'delta_RPUT', 'decay_RPUT', 'RT_delta', 'RT_decay', 'delta_RPUT_unc', 'decay_RPUT_unc',
+                   'mean_var_delta', 'mean_var_unc',
+                   'perseveration', 'random']
 selected_models = ['delta', 'decay', 'delta_RPUT', 'decay_RPUT', 'RT_delta', 'RT_decay',
-                   'mean_var_delta', 'mean_var_decay', 'delta_RPUT_unc', 'decay_RPUT_unc']
-# create_model_summary_table({model: lesas1_model_results[model] for model in selected_models},
-#                             './LeSaS1/selected_model_summary.docx')
+                   'perseveration', 'random']
+create_model_summary_table({model: lesas1_model_results[model] for model in selected_models},
+                            './LeSaS1/selected_model_summary.docx')
 # create_model_summary_table({model: lesas1_3blocks_model_results[model] for model in selected_models},
 #                             './LeSaS1/3blocks_selected_model_summary.docx')
 create_model_summary_table({model: ledisas_model_results[model] for model in selected_models},
@@ -156,9 +170,19 @@ bic_weights.to_csv('./LeSaS1/bic_weights.csv', index=False)
 lesas1_value_based_participants = best[best['Model'].isin(['delta', 'decay'])]['participant_id']
 lesas1_RT_based_participants = best[best['Model'].isin(['RT_delta', 'RT_decay'])]['participant_id']
 lesas1_RPUT_based_participants = best[best['Model'].isin(['delta_RPUT', 'decay_RPUT'])]['participant_id']
+lesas1_perseveration_based_participants = best[best['Model'].isin(['perseveration'])]['participant_id']
+lesas1_random_based_participants = best[best['Model'].isin(['random'])]['participant_id']
 lesas1_value_based_participants.to_csv('./LeSaS1/Data/value_based_participants.csv', index=False)
 lesas1_RT_based_participants.to_csv('./LeSaS1/Data/RT_based_participants.csv', index=False)
 lesas1_RPUT_based_participants.to_csv('./LeSaS1/Data/RPUT_based_participants.csv', index=False)
+lesas1_perseveration_based_participants.to_csv('./LeSaS1/Data/perseveration_based_participants.csv', index=False)
+lesas1_random_based_participants.to_csv('./LeSaS1/Data/random_based_participants.csv', index=False)
+
+# calculate the mean perseveration parameter for the perseveration based participants
+perseveration = lesas1_model_results['perseveration']
+perseveration_params = perseveration[perseveration['participant_id'].isin(lesas1_perseveration_based_participants)]
+mean_perseveration = perseveration_params['w'].mean()
+print(f'Mean perseveration parameter for perseveration based participants: {mean_perseveration:.2f}')
 
 print('=' * 50)
 print('Model summary tables created successfully.')
@@ -219,11 +243,12 @@ corr_2 = pg.pairwise_corr(hybrid_delta_delta_2, columns=['Optimal_Choice', 't', 
 # ======================================================================================================================
 print(ledisas_model_results['mean_var_decay']['lamda'].groupby(ledisas_model_results['mean_var_decay']['Group']).mean())
 print(ledisas_model_results['mean_var_delta']['lamda'].groupby(ledisas_model_results['mean_var_delta']['Group']).mean())
+print(ledisas_model_results['mean_var_unc']['lamda'].groupby(ledisas_model_results['delta_RPUT_unc']['Group']).mean())
 print(ledisas_model_results['delta_RPUT_unc']['lamda'].groupby(ledisas_model_results['delta_RPUT_unc']['Group']).mean())
 print(ledisas_model_results['decay_RPUT_unc']['lamda'].groupby(ledisas_model_results['decay_RPUT_unc']['Group']).mean())
 
 # visualize lambda distribution
-for model_name in ['mean_var_decay', 'mean_var_delta', 'delta_RPUT_unc', 'decay_RPUT_unc']:
+for model_name in ['mean_var', 'mean_var_delta', 'mean_var_unc']:
     model_df = ledisas_model_results[model_name]
     # one panel per group
     g = sns.FacetGrid(model_df, col='Group', height=4, aspect=1)
