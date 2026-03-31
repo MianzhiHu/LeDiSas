@@ -22,11 +22,13 @@ from diptest import diptest
 
 # load the data
 lesas1_data_raw = pd.read_csv('./LeSaS1/Data/raw_data.csv')
+lesas1_group_assignment = pd.read_csv('./LeSaS1/Data/group_assignment.csv')
 lesas1_data_clean = pd.read_csv('./LeSaS1/Data/cleaned_data.csv')
 ledisas_data_raw = pd.read_csv('./LeDiSaS/Data/raw_data.csv')
 ledisas_data_clean = pd.read_csv('./LeDiSaS/Data/cleaned_data.csv')
-lesas1_group_assignment = pd.read_csv('./LeSaS1/Data/group_assignment.csv')
 ledisas_group_assignment = pd.read_csv('./LeDiSaS/Data/group_assignment.csv')
+ledis_data_raw = pd.read_csv('./LeDiS/Data/raw_data.csv')
+ledis_data_clean = pd.read_csv('./LeDiS/Data/cleaned_data.csv')
 
 # load participant indices
 value_based_index = pd.read_csv('./LeSaS1/Data/value_based_participants.csv')
@@ -37,12 +39,16 @@ random_based_index = pd.read_csv('./LeSaS1/Data/random_based_participants.csv')
 
 lesas1_data_raw = calculate_rt_stats(lesas1_data_raw)
 ledisas_data_raw = calculate_rt_stats(ledisas_data_raw)
+ledis_data_raw = calculate_rt_stats(ledis_data_raw)
 
 for df in [lesas1_data_raw, lesas1_data_clean, lesas1_group_assignment]:
     df = df.rename(columns={'Group(1=OptHighReward;2=OptLowReward)': 'Group'}, inplace=True)
 
 for df in [ledisas_data_raw, ledisas_data_clean]:
     df = df.rename(columns={'Group(1=OHRHV,SLRLV; 2=OHRLV,SLRHV; 3=OLRHV,SHRLV, 4 = OLRLV,SHRHV)': 'Group'}, inplace=True)
+
+for df in [ledis_data_raw, ledis_data_clean]:
+    df = df.rename(columns={'Group(1=OptHighReward;2=OptLowReward)': 'Group'}, inplace=True)
 
 # Get participants
 value_based_participants = lesas1_data_raw[lesas1_data_raw['SubNo'].isin(value_based_index['participant_id'])]
@@ -482,4 +488,98 @@ if __name__ == "__main__":
     plt.xlabel('Window Step')
     plt.ylabel('Optimal Choice Percentage')
     plt.savefig('./figures/ledisas_optimal_choice_moving_window.png', dpi=600, bbox_inches='tight')
+
+    # ======================================================================================================================
+    # LeDiS Behavioral Analysis
+    # ======================================================================================================================
+    # ----------------------------------------------------------------------------------------------------------------------
+    # Behavioral Data Analysis
+    # ----------------------------------------------------------------------------------------------------------------------
+    # Define the number of blocks
+    ledis_data_3blocks = ledis_data_clean[ledis_data_clean['Block'].isin([1, 2, 3])]
+    ledis_data_4blocks = ledis_data_clean[ledis_data_clean['Block'].isin([1, 2, 3, 4])]
+
+    print(f'Mean Optimal Choice by Group:')
+    print(ledis_data_clean.groupby('Group')['Optimal_Choice'].mean())
+
+    # one-sample t-test for optimal choice percentage
+    for group in ledis_data_clean['Group'].unique():
+        group_data = ledis_data_clean[ledis_data_clean['Group'] == group]
+        subj_means = group_data.groupby('SubNo')['Optimal_Choice'].mean()
+        t_stat, p_val = stats.ttest_1samp(subj_means, 0.5)
+        # test for bimodality using dip test
+        dip, p_dip = diptest(subj_means.values)
+        print(f'Group {group}: t-statistic = {t_stat:.3f}, p-value = {p_val:.3f}, Mean Optimal Choice = {subj_means.mean():.3f}')
+        print(f'Group {group}: dip statistic = {dip:.3f}, p-value = {p_dip:.3f}')
+
+    # one-sample t-test for optimal choice percentage
+    for data_block in [ledis_data_3blocks, ledis_data_4blocks]:
+        print(f'\nAnalyzing data for {len(data_block["SubNo"].unique())} participants in {data_block["Block"].nunique()} blocks:')
+        # Calculate % of optimal choices
+        subj_means = data_block.groupby(['SubNo', 'Group'])['Optimal_Choice'].mean().reset_index()
+        groups = sorted(subj_means["Group"].unique())
+        pairwise_results = []
+
+        for g1, g2 in itertools.combinations(groups, 2):
+            data1 = subj_means[subj_means['Group'] == g1]['Optimal_Choice']
+            data2 = subj_means[subj_means['Group'] == g2]['Optimal_Choice']
+
+            t_stat, p_val = stats.ttest_ind(data1, data2)
+
+            # Levene's test for equal variances
+            f_stat, f_p_val = stats.levene(data1, data2)
+
+            pairwise_results.append({
+                "Group 1": g1,
+                "Group 2": g2,
+                "t": t_stat,
+                "p_t": p_val,
+                "F": f_stat,
+                "p_f": f_p_val,
+                "G1 Mean": data1.mean(),
+                "G2 Mean": data2.mean(),
+                "G1 Std": data1.std(),
+                "G2 Std": data2.std()
+            })
+
+        pairwise_df = pd.DataFrame(pairwise_results)
+        print(pairwise_df)
+
+    # Perform mixed ANOVA for 3 blocks
+    ledis_mix_anova_results_3b = pg.mixed_anova(data=ledis_data_3blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo')
+    ledis_mix_anova_results_4b = pg.mixed_anova(data=ledis_data_4blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo')
+    ledis_pairwise_results_3b = pg.pairwise_tests(data=ledis_data_3blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo', padjust='fdr_bh')
+    ledis_pairwise_results_4b = pg.pairwise_tests(data=ledis_data_4blocks, dv='Optimal_Choice', between='Group', within='Block', subject='SubNo', padjust='fdr_bh')
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    # Behavioral Windows
+    # ----------------------------------------------------------------------------------------------------------------------
+    # Define the window size
+    window_size = 10
+    ledis_optimal_choices = []
+
+    for _, participant_data in ledis_data_raw.groupby('SubNo'):
+        for i in range(len(participant_data) - window_size + 1):
+            window = participant_data.iloc[i:i + window_size]
+            window = exclusionary_criteria(window)
+            optimal_percent = np.mean(window['Optimal_Choice'])
+            ledis_optimal_choices.append({
+                'participant_id': participant_data['SubNo'].iloc[0],
+                'window_id': i + 1,
+                'optimal_percentage': optimal_percent,
+                'Group': participant_data['Group'].iloc[0]
+            })
+    ledis_optimal_window_df = pd.DataFrame(ledis_optimal_choices)
+    ledis_optimal_window_df['Group'] = ledis_optimal_window_df['Group'].map({1: 'OHRHV,SLRLV', 2: 'OHRLV,SLRHV', 3: 'OLRHV,SHRLV', 4: 'OLRLV,SHRHV'})
+
+    # Create a plot for optimal choice percentages
+    plt.figure(figsize=(10, 6))
+    sns.lineplot(data=ledis_optimal_window_df, x='window_id', y='optimal_percentage', hue='Group')
+    plt.axvline(x=75, color='gray', linestyle='--', alpha=0.5, label='Block 1-2 Transition')
+    plt.axvline(x=159, color='gray', linestyle='--', alpha=0.5, label='Block 2-3 Transition')
+    plt.axvline(x=243, color='gray', linestyle='--', alpha=0.5, label='Block 3-4 Transition')
+    plt.title('Optimal Choice Percentage by Window Steps')
+    plt.xlabel('Window Step')
+    plt.ylabel('Optimal Choice Percentage')
+    plt.savefig('./figures/ledis_optimal_choice_moving_window.png', dpi=600, bbox_inches='tight')
 

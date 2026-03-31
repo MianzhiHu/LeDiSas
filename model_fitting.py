@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from utils.VisualSearchModels import VisualSearchModels
@@ -11,6 +12,8 @@ lesas1_data_raw = pd.read_csv('./LeSaS1/Data/raw_data.csv')
 lesas1_data_clean = pd.read_csv('./LeSaS1/Data/cleaned_data.csv')
 ledisas_data_raw = pd.read_csv('./Ledisas/Data/raw_data.csv')
 ledisas_data_clean = pd.read_csv('./Ledisas/Data/cleaned_data.csv')
+ledis_data_raw = pd.read_csv('./LeDiS/Data/raw_data.csv')
+ledis_data_clean = pd.read_csv('./LeDiS/Data/cleaned_data.csv')
 
 lesas1_full_dict = dict_generator(lesas1_data_clean, task='VS')
 lesas1_3block_dict = dict_generator(lesas1_data_clean[lesas1_data_clean['Block'] <= 3], task='VS')
@@ -18,10 +21,41 @@ lesas1_3block_dict = dict_generator(lesas1_data_clean[lesas1_data_clean['Block']
 ledisas_full_dict = dict_generator(ledisas_data_clean, task='VS')
 ledisas_3block_dict = dict_generator(ledisas_data_clean[ledisas_data_clean['Block'] <= 3], task='VS')
 
+ledis_full_dict = dict_generator(ledis_data_clean, task='VS')
+ledis_3block_dict = dict_generator(ledis_data_clean[ledis_data_clean['Block'] <= 3], task='VS')
+
+# Create a version where the option is defined by color rather than larger/smaller set
+def color_version(df):
+    df = df.copy()
+    df = df.drop(columns=['Optimal_Choice'])
+    df = df.rename(columns={'Targ_Choice': 'Optimal_Choice'})
+    df['Optimal_Choice'] = df['Optimal_Choice'] - 1
+    return df
+
+
+def stim_version(df):
+    df = df.copy()
+    df = df.drop(columns=['OutcomeValue'])
+    df = df.rename(columns={'Optimal_Choice': 'OutcomeValue'})
+    df = df.rename(columns={'Targ_Choice': 'Optimal_Choice'})
+    df['Optimal_Choice'] = df['Optimal_Choice'] - 1
+    return df
+
+
+# Transform the data
+lesas1_color_dict = dict_generator(color_version(lesas1_data_clean), task='VS')
+ledisas_color_dict = dict_generator(ledisas_data_clean, task='VS')
+ledis_color_dict = dict_generator(ledis_data_clean, task='VS')
+
+lesas1_stim_dict = dict_generator(stim_version(lesas1_data_clean), task='VS')
+ledisas_stim_dict = dict_generator(stim_version(ledisas_data_clean), task='VS')
+ledis_stim_dict = dict_generator(stim_version(ledis_data_clean), task='VS')
+
+
 # Calculate RT stats for exclusionary criteria
 lesas1_data_raw = calculate_rt_stats(lesas1_data_raw)
 ledisas_data_raw = calculate_rt_stats(ledisas_data_raw)
-
+ledis_data_raw = calculate_rt_stats(ledis_data_raw)
 
 # Define exclusionary criteria for sliding window model fitting (This is the same as the one used in preprocessing)
 def exclusionary_criteria(data):
@@ -41,9 +75,18 @@ if __name__ == "__main__":
     # Define the directories for model fitting results
     lesas1_full_folder = './LeSaS1/Model/'
     lesas1_3block_folder = './LeSaS1/Model/3block/'
+    lesas1_color_folder = './LeSaS1/Model/Color/'
+    lesas1_stim_folder = './LeSaS1/Model/Stim/'
 
     ledisas_full_folder = './Ledisas/Model/'
     ledisas_3block_folder = './Ledisas/Model/3block/'
+    ledisas_color_folder = './Ledisas/Model/Color/'
+    ledisas_stim_folder = './Ledisas/Model/Stim/'
+
+    ledis_full_folder = './LeDiS/Model/'
+    ledis_3block_folder = './LeDiS/Model/3block/'
+    ledis_color_folder = './LeDiS/Model/Color/'
+    ledis_stim_folder = './LeDiS/Model/Stim/'
 
     # Define the models
     delta = VisualSearchModels('delta')
@@ -69,6 +112,9 @@ if __name__ == "__main__":
     mean_var_decay = VisualSearchModels('mean_var_decay')
     mean_var_unc = VisualSearchModels('mean_var_unc')
     kalman = VisualSearchModels('kalman_filter')
+    stim_delta = VisualSearchModels('stim_delta')
+    stim_decay = VisualSearchModels('stim_decay')
+    stim_WSLS = VisualSearchModels('stim_WSLS')
     RT_exp_basic = VisualSearchModels('RT_exp_basic')
     RT_delta = VisualSearchModels('RT_delta')
     RT_delta_PVL = VisualSearchModels('RT_delta_PVL')
@@ -93,7 +139,7 @@ if __name__ == "__main__":
     #               RT_decay_PVL, RT_exp_delta, RT_exp_decay, hybrid_delta_delta, hybrid_delta_delta_3,
     #               hybrid_decay_delta, hybrid_decay_delta_3, delta_perseveration, hybrid_WSLS_delta, dual_process]
 
-    model_names = ['delta', 'decay', 'RT_delta', 'RT_decay',
+    model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'WSLS_delta',
                    'delta_RPUT', 'decay_RPUT', 'delta_RPUT_unc', 'decay_RPUT_unc',
                    'hybrid_delta_delta',
                    'hybrid_decay_delta', 'hybrid_decay_decay',
@@ -101,20 +147,24 @@ if __name__ == "__main__":
                    'perseveration', 'random'
                    ]
 
-    model_list = [delta, decay, RT_delta, RT_decay,
+    model_list = [delta, decay, RT_delta, RT_decay, WSLS_delta,
                   delta_RPUT, decay_RPUT, delta_RPUT_uncertainty, decay_RPUT_uncertainty,
                   hybrid_delta_delta, hybrid_decay_delta, hybrid_decay_decay,
                   mean_var, mean_var_delta, mean_var_unc, kalman,
                   perseveration, dummy_model
                   ]
 
+    stim_model_names = ['stim_delta', 'stim_decay', 'stim_WSLS']
+    stim_model_list = [stim_delta, stim_decay, stim_WSLS]
+
     moving_window_model_names = ['delta', 'decay', 'RT_delta', 'RT_decay', 'delta_RPUT', 'decay_RPUT',
                                  'hybrid_delta_delta', 'hybrid_decay_delta', 'hybrid_decay_decay']
     moving_window_model_list = [delta, decay, RT_delta, RT_decay, delta_RPUT, decay_RPUT, hybrid_delta_delta,
                                 hybrid_decay_delta, hybrid_decay_decay]
 
-    lesas1_folders = [lesas1_full_folder, lesas1_3block_folder]
-    ledisas_folders = [ledisas_full_folder, ledisas_3block_folder]
+    lesas1_folders = [lesas1_full_folder, lesas1_3block_folder, lesas1_color_folder]
+    ledisas_folders = [ledisas_full_folder, ledisas_3block_folder, ledisas_color_folder]
+    ledis_folders = [ledis_full_folder, ledis_3block_folder, ledis_color_folder]
 
     n_iterations = 200
     window_size = 10
@@ -123,48 +173,69 @@ if __name__ == "__main__":
     # # LeSaS1 Model Fitting (4 blocks; 3 blocks)
     # # ==================================================================================================================
     # Whole-task model fitting
-    for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict]):
+    for i, lesas1_dict in enumerate([lesas1_full_dict, lesas1_3block_dict, lesas1_color_dict]):
         for j, model in enumerate(model_list):
+            # Check if the file already exists
+            if i == 2:  # If it's the color version, add "color_" prefix to the file name
+                save_dir = f'{lesas1_folders[i]}color_{model_names[j]}_results.csv'
+            else:
                 save_dir = f'{lesas1_folders[i]}{model_names[j]}_results.csv'
-                # Check if the file already exists
-                try:
-                 existing_results = pd.read_csv(save_dir)
-                 if not existing_results.empty:
-                      print(f"File {save_dir} already exists. Skipping model fitting.")
-                      continue
-                except FileNotFoundError:
-                 pass
+            try:
+             existing_results = pd.read_csv(save_dir)
+             if not existing_results.empty:
+                  print(f"File {save_dir} already exists. Skipping model fitting.")
+                  continue
+            except FileNotFoundError:
+             pass
 
-                # If the model is dual-process, fit it with specific parameters
-                if model_names[j] == 'dual_process':
-                    model_results = dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
-                                     Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-                                     num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5],
-                                     initial_mode='fixed', num_iterations=n_iterations)
-                elif model_names[j] == 'random':
-                    # extract the number of trials for each subject
-                    results_list = []
-                    for subject_id, subject_data in lesas1_dict.items():
-                        n_trials = len(subject_data['choice'])
-                        # NLL
-                        nll = -np.log(0.5) * (n_trials - 1)  # Exclude first trial
-                        # AIC
-                        aic = 2 * 0 + 2 * nll  # 0 parameters
-                        # BIC
-                        bic = np.log(n_trials) * 0 + 2 * nll  # 0 parameters
-                        results_list.append({
-                            'participant_id': subject_id,
-                            'best_nll': nll,
-                            'AIC': aic,
-                            'BIC': bic
-                        })
-                    model_results = pd.DataFrame(results_list)
+            # If the model is dual-process, fit it with specific parameters
+            if model_names[j] == 'dual_process':
+                model_results = dual_process.fit(lesas1_dict, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+                                 Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
+                                 num_training_trials=999, num_exp_restart=9999, initial_EV=[0.5, 0.5],
+                                 initial_mode='fixed', num_iterations=n_iterations)
+            elif model_names[j] == 'random':
+                # extract the number of trials for each subject
+                results_list = []
+                for subject_id, subject_data in lesas1_dict.items():
+                    n_trials = len(subject_data['choice'])
+                    # NLL
+                    nll = -np.log(0.5) * (n_trials - 1)  # Exclude first trial
+                    # AIC
+                    aic = 2 * 0 + 2 * nll  # 0 parameters
+                    # BIC
+                    bic = np.log(n_trials) * 0 + 2 * nll  # 0 parameters
+                    results_list.append({
+                        'participant_id': subject_id,
+                        'best_nll': nll,
+                        'AIC': aic,
+                        'BIC': bic
+                    })
+                model_results = pd.DataFrame(results_list)
 
-                else:
-                    # Fit the model to the data
-                    model_results = model.fit(lesas1_dict, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
+            else:
+                # Fit the model to the data
+                model_results = model.fit(lesas1_dict, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
 
-                model_results.to_csv(save_dir, index=False)
+            model_results.to_csv(save_dir, index=False)
+
+    print(f'Start fitting stimulus frequency models...')
+
+    for i, lesas1_dict in enumerate([lesas1_stim_dict]):
+        for j, model in enumerate(stim_model_list):
+            # Check if the file already exists
+            save_dir = f'{lesas1_folders[i]}stim_{stim_model_names[j]}_results.csv'
+            try:
+             existing_results = pd.read_csv(save_dir)
+             if not existing_results.empty:
+                  print(f"File {save_dir} already exists. Skipping model fitting.")
+                  continue
+            except FileNotFoundError:
+             pass
+            # Fit the model to the data
+            model_results = model.fit(lesas1_dict, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
+            model_results.to_csv(save_dir, index=False)
+    #
     #
     # # ------------------------------------------------------------------------------------------------------------------
     # # Fit the models with sliding window
@@ -192,57 +263,155 @@ if __name__ == "__main__":
     # Ledisas Model Fitting (4 blocks; 3 blocks)
     # ==================================================================================================================
     # Whole-task model fitting
-    for i, ledisas_data in enumerate([ledisas_full_dict, ledisas_3block_dict]):
+    for i, ledisas_data in enumerate([ledisas_full_dict, ledisas_3block_dict, ledisas_color_dict]):
         for j, model in enumerate(model_list):
+            # Check if the file already exists
+            if i == 2:  # If it's the color version, add "color_" prefix to the file name
+                save_dir = f'{ledisas_folders[i]}color_{model_names[j]}_results.csv'
+            else:
                 save_dir = f'{ledisas_folders[i]}{model_names[j]}_results.csv'
-                # Check if the file already exists
-                try:
-                 existing_results = pd.read_csv(save_dir)
-                 if not existing_results.empty:
-                      print(f"File {save_dir} already exists. Skipping model fitting.")
-                      continue
-                except FileNotFoundError:
-                 pass
+            try:
+             existing_results = pd.read_csv(save_dir)
+             if not existing_results.empty:
+                  print(f"File {save_dir} already exists. Skipping model fitting.")
+                  continue
+            except FileNotFoundError:
+             pass
 
-                # If the model is dual-process, fit it with specific parameters
-                if model_names[j] == 'dual_process':
-                    model_results = dual_process.fit(ledisas_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
-                                                     Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
-                                                     num_training_trials=999, num_exp_restart=9999,
-                                                     initial_mode='first_trial_no_alpha',num_iterations=n_iterations)
-                elif model_names[j] == 'dual_process_rt':
-                    rt_data = ledisas_data.copy()
-                    rt_data[1].pop("reward", None)
-                    rt_data[1]["reward"] = rt_data[1].pop("react_time")
-                    model_results = dual_process_rt.fit(rt_data, 'Dual_Process_Visual', Gau_fun='Naive_Recency',
-                                                        Dir_fun='Linear_Recency_VS', weight_Dir='softmax', weight_Gau='softmax',
-                                                        num_training_trials=999, num_exp_restart=9999,
-                                                        initial_mode='first_trial_no_alpha', num_iterations=n_iterations)
+            # If the model is dual-process, fit it with specific parameters
+            if model_names[j] == 'dual_process':
+                model_results = dual_process.fit(ledisas_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+                                                 Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
+                                                 num_training_trials=999, num_exp_restart=9999,
+                                                 initial_mode='first_trial_no_alpha',num_iterations=n_iterations)
+            elif model_names[j] == 'dual_process_rt':
+                rt_data = ledisas_data.copy()
+                rt_data[1].pop("reward", None)
+                rt_data[1]["reward"] = rt_data[1].pop("react_time")
+                model_results = dual_process_rt.fit(rt_data, 'Dual_Process_Visual', Gau_fun='Naive_Recency',
+                                                    Dir_fun='Linear_Recency_VS', weight_Dir='softmax', weight_Gau='softmax',
+                                                    num_training_trials=999, num_exp_restart=9999,
+                                                    initial_mode='first_trial_no_alpha', num_iterations=n_iterations)
 
-                elif model_names[j] == 'random':
-                    # extract the number of trials for each subject
-                    results_list = []
-                    for subject_id, subject_data in ledisas_data.items():
-                        n_trials = len(subject_data['choice'])
-                        # NLL
-                        nll = -np.log(0.5) * (n_trials - 1)  # Exclude first trial
-                        # AIC
-                        aic = 2 * 0 + 2 * nll  # 0 parameters
-                        # BIC
-                        bic = np.log(n_trials) * 0 + 2 * nll  # 0 parameters
-                        results_list.append({
-                            'participant_id': subject_id,
-                            'best_nll': nll,
-                            'AIC': aic,
-                            'BIC': bic
-                        })
-                    model_results = pd.DataFrame(results_list)
+            elif model_names[j] == 'random':
+                # extract the number of trials for each subject
+                results_list = []
+                for subject_id, subject_data in ledisas_data.items():
+                    n_trials = len(subject_data['choice'])
+                    # NLL
+                    nll = -np.log(0.5) * (n_trials - 1)  # Exclude first trial
+                    # AIC
+                    aic = 2 * 0 + 2 * nll  # 0 parameters
+                    # BIC
+                    bic = np.log(n_trials) * 0 + 2 * nll  # 0 parameters
+                    results_list.append({
+                        'participant_id': subject_id,
+                        'best_nll': nll,
+                        'AIC': aic,
+                        'BIC': bic
+                    })
+                model_results = pd.DataFrame(results_list)
 
-                else:
-                    # Fit the model to the data
-                    model_results = model.fit(ledisas_data, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
+            else:
+                # Fit the model to the data
+                model_results = model.fit(ledisas_data, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
 
-                model_results.to_csv(save_dir, index=False)
+            model_results.to_csv(save_dir, index=False)
+
+    print(f'Start fitting stimulus frequency models...')
+
+    for i, ledisas_dict in enumerate([ledisas_stim_dict]):
+        for j, model in enumerate(stim_model_list):
+            # Check if the file already exists
+            save_dir = f'{ledisas_folders[i]}stim_{stim_model_names[j]}_results.csv'
+            try:
+                existing_results = pd.read_csv(save_dir)
+                if not existing_results.empty:
+                    print(f"File {save_dir} already exists. Skipping model fitting.")
+                    continue
+            except FileNotFoundError:
+                pass
+            # Fit the model to the data
+            model_results = model.fit(ledisas_dict, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
+            model_results.to_csv(save_dir, index=False)
+
+
+    # ==================================================================================================================
+    # LediS Model Fitting (4 blocks; 3 blocks)
+    # ==================================================================================================================
+    # Whole-task model fitting
+    for i, ledis_data in enumerate([ledis_full_dict, ledis_3block_dict, ledis_color_dict]):
+        for j, model in enumerate(model_list):
+            # Check if the file already exists
+            if i == 2:  # If it's the color version, add "color_" prefix to the file name
+                save_dir = f'{ledis_folders[i]}color_{model_names[j]}_results.csv'
+                print(save_dir)
+            else:
+                save_dir = f'{ledis_folders[i]}{model_names[j]}_results.csv'
+            try:
+             existing_results = pd.read_csv(save_dir)
+             if not existing_results.empty:
+                  print(f"File {save_dir} already exists. Skipping model fitting.")
+                  continue
+            except FileNotFoundError:
+             pass
+
+            # If the model is dual-process, fit it with specific parameters
+            if model_names[j] == 'dual_process':
+                model_results = dual_process.fit(ledis_data, 'Dual_Process_t2', Gau_fun='Naive_Recency',
+                                                 Dir_fun='Linear_Recency', weight_Dir='softmax', weight_Gau='softmax',
+                                                 num_training_trials=999, num_exp_restart=9999,
+                                                 initial_mode='first_trial_no_alpha',num_iterations=n_iterations)
+            elif model_names[j] == 'dual_process_rt':
+                rt_data = ledis_data.copy()
+                rt_data[1].pop("reward", None)
+                rt_data[1]["reward"] = rt_data[1].pop("react_time")
+                model_results = dual_process_rt.fit(rt_data, 'Dual_Process_Visual', Gau_fun='Naive_Recency',
+                                                    Dir_fun='Linear_Recency_VS', weight_Dir='softmax', weight_Gau='softmax',
+                                                    num_training_trials=999, num_exp_restart=9999,
+                                                    initial_mode='first_trial_no_alpha', num_iterations=n_iterations)
+
+            elif model_names[j] == 'random':
+                # extract the number of trials for each subject
+                results_list = []
+                for subject_id, subject_data in ledis_data.items():
+                    n_trials = len(subject_data['choice'])
+                    # NLL
+                    nll = -np.log(0.5) * (n_trials - 1)  # Exclude first trial
+                    # AIC
+                    aic = 2 * 0 + 2 * nll  # 0 parameters
+                    # BIC
+                    bic = np.log(n_trials) * 0 + 2 * nll  # 0 parameters
+                    results_list.append({
+                        'participant_id': subject_id,
+                        'best_nll': nll,
+                        'AIC': aic,
+                        'BIC': bic
+                    })
+                model_results = pd.DataFrame(results_list)
+
+            else:
+                # Fit the model to the data
+                model_results = model.fit(ledis_data, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
+
+            model_results.to_csv(save_dir, index=False)
+
+    print(f'Start fitting stimulus frequency models...')
+
+    for i, ledis_dict in enumerate([ledis_stim_dict]):
+        for j, model in enumerate(stim_model_list):
+            # Check if the file already exists
+            save_dir = f'{ledis_folders[i]}stim_{stim_model_names[j]}_results.csv'
+            try:
+                existing_results = pd.read_csv(save_dir)
+                if not existing_results.empty:
+                    print(f"File {save_dir} already exists. Skipping model fitting.")
+                    continue
+            except FileNotFoundError:
+                pass
+            # Fit the model to the data
+            model_results = model.fit(ledis_dict, num_iterations=n_iterations, initial_mode='first_trial_no_alpha')
+            model_results.to_csv(save_dir, index=False)
 
     # # ------------------------------------------------------------------------------------------------------------------
     # # Fit the models with sliding window
@@ -264,6 +433,28 @@ if __name__ == "__main__":
     #                                                 filter_fn=exclusionary_criteria, restart_EV=True,
     #                                                 initial_mode='fixed', initial_EV=[0.5, 0.5])
     #     model_results.to_csv(save_dir, index=False)
+
+    # ==================================================================================================================
+    # Change the file name in color folders
+    # ==================================================================================================================
+    for base_folder in [lesas1_color_folder, ledisas_color_folder, ledis_color_folder]:
+        for root, dirs, files in os.walk(base_folder):
+            for file in files:
+                if file.endswith('.csv'):
+
+                    old_path = os.path.join(root, file)
+
+                    # avoid renaming twice
+                    if file.startswith('color_'):
+                        continue
+
+                    new_name = f"color_{os.path.splitext(file)[0]}.csv"
+                    new_path = os.path.join(root, new_name)
+
+                    os.rename(old_path, new_path)
+
+                    print(f"{file} → {new_name}")
+
 
     # ==================================================================================================================
     # Block-wise model fitting (Unused)
